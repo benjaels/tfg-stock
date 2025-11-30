@@ -89,3 +89,92 @@ def registrar_recepcion_simple(request):
 
     # GET: mostrar formulario vacío
     return render(request, "inventario/registrar_recepcion.html")
+@login_required
+def registrar_movimiento_simple(request):
+    """
+    Registro simplificado de un movimiento de stock usando el código QR del artículo.
+    Permite egresos y ajustes.
+    """
+    if request.method == "POST":
+        tipo = request.POST.get("tipo")
+        valor_qr = request.POST.get("valor_qr", "").strip()
+        cantidad_str = request.POST.get("cantidad", "").strip()
+        observaciones = request.POST.get("observaciones", "").strip()
+
+        if not tipo or not valor_qr or not cantidad_str:
+            messages.error(request, "Tipo de movimiento, código QR y cantidad son obligatorios.")
+            return redirect("registrar_movimiento")
+
+        # Parsear cantidad como Decimal
+        try:
+            cantidad = Decimal(cantidad_str.replace(",", "."))
+        except (InvalidOperation, ValueError):
+            messages.error(request, "La cantidad debe ser un número válido.")
+            return redirect("registrar_movimiento")
+
+        if cantidad == 0:
+            messages.error(request, "La cantidad debe ser distinta de cero.")
+            return redirect("registrar_movimiento")
+
+        # Para INGRESO y EGRESO trabajamos con valor absoluto
+        cantidad_abs = cantidad.copy_abs()
+
+        try:
+            articulo = Articulo.objects.get(codigo_qr=valor_qr)
+        except Articulo.DoesNotExist:
+            messages.error(request, "No se encontró un artículo con ese código QR.")
+            return redirect("registrar_movimiento")
+
+        stock_actual = articulo.stock_actual or Decimal("0")
+
+        # Calcular nuevo stock según tipo
+        if tipo == MovimientoStock.TIPO_INGRESO:
+            nuevo_stock = stock_actual + cantidad_abs
+            cantidad_mov = cantidad_abs
+
+        elif tipo == MovimientoStock.TIPO_EGRESO:
+            # Egreso no puede dejar el stock negativo
+            if cantidad_abs > stock_actual:
+                messages.error(
+                    request,
+                    f"No hay stock suficiente para egresar {cantidad_abs}. Stock actual: {stock_actual}."
+                )
+                return redirect("registrar_movimiento")
+            nuevo_stock = stock_actual - cantidad_abs
+            cantidad_mov = cantidad_abs
+
+        elif tipo == MovimientoStock.TIPO_AJUSTE:
+            # En ajuste permitimos cantidades positivas o negativas
+            nuevo_stock = stock_actual + cantidad
+            if nuevo_stock < 0:
+                messages.error(
+                    request,
+                    f"El ajuste dejaría el stock negativo ({nuevo_stock}). Operación cancelada."
+                )
+                return redirect("registrar_movimiento")
+            cantidad_mov = cantidad  # en movimientos guardamos el ajuste tal cual (puede ser negativo)
+        else:
+            messages.error(request, "Tipo de movimiento inválido.")
+            return redirect("registrar_movimiento")
+
+        # Actualizar stock
+        articulo.stock_actual = nuevo_stock
+        articulo.save()
+
+        # Registrar movimiento
+        MovimientoStock.objects.create(
+            articulo=articulo,
+            tipo=tipo,
+            cantidad=cantidad_mov,
+            observaciones=observaciones,
+            usuario=request.user,
+        )
+
+        messages.success(
+            request,
+            f"Movimiento registrado. Nuevo stock de {articulo.codigo}: {nuevo_stock}."
+        )
+        return redirect("lista_articulos")
+
+    # GET: mostrar formulario
+    return render(request, "inventario/registrar_movimiento.html")
