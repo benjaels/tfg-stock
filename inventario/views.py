@@ -178,3 +178,19 @@ def registrar_movimiento_simple(request):
 
     # GET: mostrar formulario
     return render(request, "inventario/registrar_movimiento.html")
+from django.core.paginator import Paginator  # al principio del archivo, junto con los otros imports
+@login_required
+def lista_movimientos(request):
+    """
+    Muestra el historial de movimientos de stock (ingresos, egresos y ajustes),
+    ordenados del más reciente al más antiguo.
+    """
+    movimientos = MovimientoStock.objects.select_related("articulo", "usuario").all()
+    paginator = Paginator(movimientos, 50)  # 50 por página
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    contexto = {
+        "page_obj": page_obj,
+    }
+    return render(request, "inventario/lista_movimientos.html", contexto)

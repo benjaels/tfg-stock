@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Historial de movimientos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { margin-bottom: 10px; }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 1000px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f3f3f3;
+        }
+        .tipo-INGRESO { color: #27ae60; font-weight: bold; }
+        .tipo-EGRESO { color: #c0392b; font-weight: bold; }
+        .tipo-AJUSTE { color: #2980b9; font-weight: bold; }
+
+        .paginacion {
+            margin-top: 10px;
+        }
+        .paginacion a {
+            margin-right: 5px;
+            text-decoration: none;
+        }
+        .paginacion .actual {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Historial de movimientos de stock</h1>
+
+    <p>
+        <a href="/">Volver al listado de artículos</a> |
+        <a href="/movimientos/nuevo/">Registrar movimiento</a>
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha y hora</th>
+                <th>Artículo</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Usuario</th>
+                <th>Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for mov in page_obj.object_list %}
+                <tr>
+                    <td>{{ mov.fecha_hora|date:"Y-m-d H:i" }}</td>
+                    <td>{{ mov.articulo.codigo }} - {{ mov.articulo.descripcion }}</td>
+                    <td class="tipo-{{ mov.tipo }}">{{ mov.get_tipo_display }}</td>
+                    <td>{{ mov.cantidad }}</td>
+                    <td>{{ mov.usuario }}</td>
+                    <td>{{ mov.observaciones }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6">No hay movimientos registrados.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="paginacion">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span class="actual">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+        {% endif %}
+    </div>
+</body>
+</html>
