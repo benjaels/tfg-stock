@@ -4,22 +4,39 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.utils import timezone
-
+from django.core.paginator import Paginator
+from django.db.models import F,Case, When, Value, IntegerField
 from .models import Articulo, MovimientoStock, Recepcion, RecepcionItem
 
 
 def lista_articulos(request):
-    """
-    Muestra el listado de artículos con su stock actual
-    y una marca visual cuando están por debajo del stock mínimo.
-    """
-    articulos = Articulo.objects.all().order_by("codigo")
+    # Cantidad de artículos con stock por debajo del mínimo
+    items_bajo_minimo = Articulo.objects.filter(
+        stock_actual__lt=F("stock_minimo")
+    ).count()
+
+    # Placeholder: cuando tengas el modelo OrdenCompra, reemplazás este cálculo
+    ordenes_pendientes = 0
+
+    # Ordenar los artículos: primero los críticos (stock < mínimo), luego el resto
+    articulos = (
+        Articulo.objects
+        .annotate(
+            critico=Case(
+                When(stock_actual__lt=F("stock_minimo"), then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("-critico", "codigo")
+    )
+
     contexto = {
         "articulos": articulos,
+        "items_bajo_minimo": items_bajo_minimo,
+        "ordenes_pendientes": ordenes_pendientes,
     }
     return render(request, "inventario/lista_articulos.html", contexto)
-
-
 @login_required
 def registrar_recepcion_simple(request):
     """
@@ -91,6 +108,8 @@ def registrar_recepcion_simple(request):
     return render(request, "inventario/registrar_recepcion.html")
 @login_required
 def registrar_movimiento_simple(request):
+    if request.method != "POST":
+        return redirect("lista_movimientos")
     """
     Registro simplificado de un movimiento de stock usando el código QR del artículo.
     Permite egresos y ajustes.
@@ -181,16 +200,40 @@ def registrar_movimiento_simple(request):
 from django.core.paginator import Paginator  # al principio del archivo, junto con los otros imports
 @login_required
 def lista_movimientos(request):
+    # Últimos 50 movimientos, más recientes primero
+    movimientos = (
+        MovimientoStock.objects
+        .select_related("articulo", "usuario")
+        .order_by("-fecha_hora")[:50]
+    )
+
+    # Para el buscador manual de artículos (se usa en los modales)
+    articulos = Articulo.objects.all().order_by("codigo")
+
+    contexto = {
+        "movimientos": movimientos,
+        "articulos": articulos,
+    }
+    return render(request, "inventario/lista_movimientos.html", contexto)
+
+@login_required
+def lista_movimientos_parcial(request):
     """
-    Muestra el historial de movimientos de stock (ingresos, egresos y ajustes),
-    ordenados del más reciente al más antiguo.
+    Vista parcial utilizada por htmx para recargar solo la tabla de movimientos.
     """
     movimientos = MovimientoStock.objects.select_related("articulo", "usuario").all()
-    paginator = Paginator(movimientos, 50)  # 50 por página
+    paginator = Paginator(movimientos, 50)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
     contexto = {
         "page_obj": page_obj,
     }
-    return render(request, "inventario/lista_movimientos.html", contexto)
+    return render(request, "inventario/_lista_movimientos_table.html", contexto)
+@login_required
+def lista_insumos(request):
+    articulos = Articulo.objects.all().order_by("codigo")
+    contexto = {
+        "articulos": articulos,
+    }
+    return render(request, "inventario/lista_insumos.html", contexto)

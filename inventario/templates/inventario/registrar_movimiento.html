@@ -1,74 +1,85 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Registrar movimiento de stock</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        label { display: block; margin-top: 10px; }
-        input[type="text"], input[type="number"], select {
-            width: 300px;
-            padding: 4px 6px;
-        }
-        button {
-            margin-top: 15px;
-            padding: 6px 12px;
-        }
-        .messages { margin-bottom: 10px; }
-        .messages li {
-            list-style: none;
-            padding: 5px 8px;
-            margin-bottom: 4px;
-        }
-        .messages li.error {
-            background-color: #ffe5e5;
-            color: #c0392b;
-        }
-        .messages li.success {
-            background-color: #e5ffe5;
-            color: #27ae60;
-        }
-    </style>
-</head>
-<body>
-    <h1>Registrar movimiento de stock</h1>
+{% extends "base.html" %}
 
-    <div class="messages">
-        {% if messages %}
-            <ul>
-                {% for message in messages %}
-                    <li class="{{ message.tags }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
+{% block title %}Registrar movimiento{% endblock %}
+
+{% block content %}
+  <h1 class="h3 fw-bold mb-3">Movimiento de stock</h1>
+
+  <section class="bg-white rounded-4 shadow-sm p-4" x-data="{ tipo: '' }">
+    <!-- Botones de tipo de movimiento (como opciones del dashboard) -->
+    <div class="btn-group mb-4" role="group" aria-label="Tipo de movimiento">
+      <button type="button"
+              class="btn btn-sm"
+              :class="tipo === 'INGRESO' ? 'btn-dark' : 'btn-outline-secondary'"
+              @click="tipo = 'INGRESO'">
+        Nuevo ingreso
+      </button>
+      <button type="button"
+              class="btn btn-sm"
+              :class="tipo === 'EGRESO' ? 'btn-dark' : 'btn-outline-secondary'"
+              @click="tipo = 'EGRESO'">
+        Nuevo egreso
+      </button>
+      <button type="button"
+              class="btn btn-sm"
+              :class="tipo === 'AJUSTE' ? 'btn-dark' : 'btn-outline-secondary'"
+              @click="tipo = 'AJUSTE'">
+        Ajuste de stock
+      </button>
     </div>
 
-    <form method="post">
-        {% csrf_token %}
+    <form method="post" class="row g-3">
+      {% csrf_token %}
 
-        <label for="tipo">Tipo de movimiento</label>
-        <select id="tipo" name="tipo" required>
-            <option value="">-- Seleccionar --</option>
-            <option value="INGRESO">Ingreso</option>
-            <option value="EGRESO">Egreso</option>
-            <option value="AJUSTE">Ajuste</option>
-        </select>
+      <!-- Campo real que se envía al backend -->
+      <input type="hidden" name="tipo" :value="tipo">
 
-        <label for="valor_qr">Código QR leído</label>
-        <input type="text" id="valor_qr" name="valor_qr" required
-               placeholder="Valor que trae el QR del artículo">
-
-        <label for="cantidad">Cantidad</label>
-        <input type="number" step="0.01" id="cantidad" name="cantidad" required
-               placeholder="Para AJUSTE podés usar valores negativos">
-
-        <label for="observaciones">Observaciones</label>
-        <input type="text" id="observaciones" name="observaciones">
-
-        <div>
-            <button type="submit">Registrar movimiento</button>
-            <a href="/">Volver al listado de artículos</a>
+      <div class="col-md-4">
+        <label class="form-label">Tipo de movimiento</label>
+        <div class="form-control bg-light">
+          <span x-show="tipo === ''" class="text-muted">Seleccionar arriba</span>
+          <span x-show="tipo === 'INGRESO'">Ingreso</span>
+          <span x-show="tipo === 'EGRESO'">Egreso</span>
+          <span x-show="tipo === 'AJUSTE'">Ajuste</span>
         </div>
+
+        <div class="form-text mt-1" x-show="tipo === 'INGRESO'">
+          Ingreso: suma unidades al stock actual del artículo.
+        </div>
+        <div class="form-text mt-1 text-danger" x-show="tipo === 'EGRESO'">
+          Egreso: descuenta unidades del stock. El sistema no permite dejar stock negativo.
+        </div>
+        <div class="form-text mt-1 text-primary" x-show="tipo === 'AJUSTE'">
+          Ajuste: corrige diferencias de inventario. Podés usar cantidades positivas o negativas.
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <label for="valor_qr" class="form-label">Código QR leído</label>
+        <input type="text" id="valor_qr" name="valor_qr" class="form-control" required
+               placeholder="Valor que devuelve el lector de QR">
+      </div>
+
+      <div class="col-md-4">
+        <label for="cantidad" class="form-label">Cantidad</label>
+        <input type="number" step="1" id="cantidad" name="cantidad" class="form-control" required
+               placeholder="Para AJUSTE podés usar valores negativos">
+      </div>
+
+      <div class="col-12">
+        <label for="observaciones" class="form-label">Observaciones</label>
+        <input type="text" id="observaciones" name="observaciones" class="form-control">
+      </div>
+
+      <div class="col-12 d-flex justify-content-end pt-3 border-top mt-2">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary me-2">
+          Cancelar
+        </a>
+        <button type="submit" class="btn btn-dark" :disabled="tipo === ''">
+          Registrar movimiento
+        </button>
+      </div>
     </form>
-</body>
-</html>
+  </section>
+{% endblock %}
+

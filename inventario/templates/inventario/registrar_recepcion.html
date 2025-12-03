@@ -1,70 +1,46 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Registrar recepción</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        label { display: block; margin-top: 10px; }
-        input[type="text"], input[type="number"] {
-            width: 300px;
-            padding: 4px 6px;
-        }
-        button {
-            margin-top: 15px;
-            padding: 6px 12px;
-        }
-        .messages {
-            margin-bottom: 10px;
-        }
-        .messages li {
-            list-style: none;
-            padding: 5px 8px;
-            margin-bottom: 4px;
-        }
-        .messages li.error {
-            background-color: #ffe5e5;
-            color: #c0392b;
-        }
-        .messages li.success {
-            background-color: #e5ffe5;
-            color: #27ae60;
-        }
-    </style>
-</head>
-<body>
-    <h1>Registrar recepción</h1>
+{% extends "base.html" %}
 
-    <div class="messages">
-        {% if messages %}
-            <ul>
-                {% for message in messages %}
-                    <li class="{{ message.tags }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    </div>
+{% block title %}Registrar recepción{% endblock %}
 
-    <form method="post">
-        {% csrf_token %}
+{% block content %}
+  <h1 class="h3 fw-bold mb-3">Recepción de mercadería</h1>
 
-        <label for="proveedor">Proveedor</label>
-        <input type="text" id="proveedor" name="proveedor" required>
+  <section class="bg-white rounded-4 shadow-sm p-4">
+    <form method="post" class="row g-3">
+      {% csrf_token %}
 
-        <label for="numero_documento">Nº de documento (remito/factura)</label>
-        <input type="text" id="numero_documento" name="numero_documento">
+      <div class="col-md-6">
+        <label for="proveedor" class="form-label">Proveedor</label>
+        <input type="text" id="proveedor" name="proveedor" class="form-control" required>
+      </div>
 
-        <label for="valor_qr">Código QR leído</label>
-        <input type="text" id="valor_qr" name="valor_qr" required
-               placeholder="Valor que trae el QR del artículo">
+      <div class="col-md-6">
+        <label for="numero_documento" class="form-label">Nº de documento (remito / factura)</label>
+        <input type="text" id="numero_documento" name="numero_documento" class="form-control">
+      </div>
 
-        <label for="cantidad">Cantidad</label>
-        <input type="number" step="1" id="cantidad" name="cantidad" required>
-
-        <div>
-            <button type="submit">Registrar recepción</button>
-            <a href="/">Volver al listado de artículos</a>
+      <div class="col-md-6">
+        <label for="valor_qr" class="form-label">Código QR leído</label>
+        <input type="text" id="valor_qr" name="valor_qr" class="form-control" required
+               placeholder="Valor que devuelve el lector de QR">
+        <div class="form-text">
+          En producción este campo se completa automáticamente al escanear el código.
         </div>
+      </div>
+
+      <div class="col-md-3">
+        <label for="cantidad" class="form-label">Cantidad</label>
+        <input type="number" step="1" id="cantidad" name="cantidad" class="form-control" required>
+      </div>
+
+      <div class="col-12 d-flex justify-content-end pt-3 border-top mt-2">
+        <a href="{% url 'lista_articulos' %}" class="btn btn-outline-secondary me-2">
+          Cancelar
+        </a>
+        <button type="submit" class="btn btn-dark">
+          Confirmar recepción
+        </button>
+      </div>
     </form>
-</body>
-</html>
+  </section>
+{% endblock %}

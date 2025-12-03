@@ -1,87 +1,255 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Historial de movimientos</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { margin-bottom: 10px; }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            max-width: 1000px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 6px 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f3f3f3;
-        }
-        .tipo-INGRESO { color: #27ae60; font-weight: bold; }
-        .tipo-EGRESO { color: #c0392b; font-weight: bold; }
-        .tipo-AJUSTE { color: #2980b9; font-weight: bold; }
+{% extends "base.html" %}
 
-        .paginacion {
-            margin-top: 10px;
-        }
-        .paginacion a {
-            margin-right: 5px;
-            text-decoration: none;
-        }
-        .paginacion .actual {
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <h1>Historial de movimientos de stock</h1>
+{% block title %}Movimientos{% endblock %}
 
-    <p>
-        <a href="/">Volver al listado de artículos</a> |
-        <a href="/movimientos/nuevo/">Registrar movimiento</a>
-    </p>
+{% block content %}
+  <h1 class="h3 fw-bold mb-3">Movimientos</h1>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Fecha y hora</th>
-                <th>Artículo</th>
-                <th>Tipo</th>
-                <th>Cantidad</th>
-                <th>Usuario</th>
-                <th>Observaciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for mov in page_obj.object_list %}
-                <tr>
-                    <td>{{ mov.fecha_hora|date:"Y-m-d H:i" }}</td>
-                    <td>{{ mov.articulo.codigo }} - {{ mov.articulo.descripcion }}</td>
-                    <td class="tipo-{{ mov.tipo }}">{{ mov.get_tipo_display }}</td>
-                    <td>{{ mov.cantidad }}</td>
-                    <td>{{ mov.usuario }}</td>
-                    <td>{{ mov.observaciones }}</td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="6">No hay movimientos registrados.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+  <section class="bg-white rounded-4 shadow-sm p-4">
 
-    <div class="paginacion">
-        {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}">Anterior</a>
-        {% endif %}
-
-        <span class="actual">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">Siguiente</a>
-        {% endif %}
+      <!-- Botones de acciones (abren modales) -->
+    <div class="row gx-3 mb-4">
+      <div class="col-md-4 mb-2">
+        <button type="button"
+                class="btn btn-dark w-100"
+                data-bs-toggle="modal"
+                data-bs-target="#modalIngreso">
+          Nuevo ingreso
+        </button>
+      </div>
+      <div class="col-md-4 mb-2">
+        <button type="button"
+                class="btn btn-outline-secondary w-100"
+                data-bs-toggle="modal"
+                data-bs-target="#modalEgreso">
+          Nuevo egreso
+        </button>
+      </div>
+      <div class="col-md-4 mb-2">
+        <button type="button"
+                class="btn btn-outline-secondary w-100"
+                data-bs-toggle="modal"
+                data-bs-target="#modalAjuste">
+          Ajuste de stock
+        </button>
+      </div>
     </div>
-</body>
-</html>
+
+    <!-- Buscador manual de artículos: se usa en los tres modales -->
+    <datalist id="articulos_datalist">
+  {% for art in articulos %}
+    <option value="{{ art.valor_qr }}">
+      {{ art.codigo }} - {{ art.descripcion }}
+    </option>
+  {% endfor %}
+</datalist>
+
+    <!-- Cabecera tipo tabla -->
+    <div class="rounded-3 bg-secondary bg-opacity-10 px-3 py-2 fw-semibold d-flex mb-2">
+      <div style="width: 16%;">Código</div>
+      <div style="width: 34%;">Nombre</div>
+      <div style="width: 16%;">Fecha</div>
+      <div style="width: 10%;">Tipo</div>
+      <div class="text-end" style="width: 12%;">Cantidad</div>
+      <div style="width: 12%;">Usuario</div>
+    </div>
+
+    <!-- Lista de últimos movimientos -->
+    <div>
+      {% for mov in movimientos %}
+        <div class="d-flex align-items-center bg-white border rounded-3 px-3 py-2 mb-2">
+          <div style="width: 16%;" class="fw-semibold">
+            {{ mov.articulo.codigo }}
+          </div>
+          <div style="width: 34%;">
+            {{ mov.articulo.descripcion }}
+          </div>
+          <div style="width: 16%;">
+            {{ mov.fecha_hora|date:"d/m/Y" }}
+          </div>
+          <div style="width: 10%;">
+            {{ mov.get_tipo_display }}
+          </div>
+          <div style="width: 12%;" class="text-end">
+            {{ mov.cantidad }}
+          </div>
+          <div style="width: 12%;">
+            {{ mov.usuario }}
+          </div>
+        </div>
+      {% empty %}
+        <div class="text-center text-muted py-4">
+          No hay movimientos registrados.
+        </div>
+      {% endfor %}
+    </div>
+
+  </section>
+
+  {# ===================== MODALES ===================== #}
+
+  <!-- Modal: Nuevo ingreso -->
+  <div class="modal fade" id="modalIngreso" tabindex="-1" aria-labelledby="modalIngresoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="post" action="{% url 'registrar_movimiento' %}">
+          {% csrf_token %}
+          <input type="hidden" name="tipo" value="INGRESO">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalIngresoLabel">Nuevo ingreso de stock</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="valor_qr_ingreso" class="form-label">Artículo</label>
+                <input type="text"
+                id="valor_qr_ingreso"
+                name="valor_qr"
+                class="form-control"
+                required
+                placeholder="Escaneá o escribí para buscar"
+                list="articulos_datalist">
+
+              <div class="form-text">
+                Podés escanear el código QR o escribir para buscar por código/nombre.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="cantidad_ingreso" class="form-label">Cantidad</label>
+              <input type="number"
+                     id="cantidad_ingreso"
+                     name="cantidad"
+                     class="form-control"
+                     min="1"
+                     step="1"
+                     required>
+            </div>
+
+            <div class="mb-3">
+              <label for="observaciones_ingreso" class="form-label">Observaciones</label>
+              <input type="text"
+                     id="observaciones_ingreso"
+                     name="observaciones"
+                     class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-dark">Confirmar ingreso</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nuevo egreso -->
+  <div class="modal fade" id="modalEgreso" tabindex="-1" aria-labelledby="modalEgresoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="post" action="{% url 'registrar_movimiento' %}">
+          {% csrf_token %}
+          <input type="hidden" name="tipo" value="EGRESO">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEgresoLabel">Nuevo egreso de stock</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="valor_qr_egreso" class="form-label">Artículo</label>
+                 <input type="text"
+                    id="valor_qr_egreso"
+                    name="valor_qr"
+                    class="form-control"
+                    required
+                    placeholder="Escaneá o escribí para buscar"
+                    list="articulos_datalist">
+
+            </div>
+
+            <div class="mb-3">
+              <label for="cantidad_egreso" class="form-label">Cantidad</label>
+              <input type="number"
+                     id="cantidad_egreso"
+                     name="cantidad"
+                     class="form-control"
+                     min="1"
+                     step="1"
+                     required>
+              <div class="form-text text-danger">
+                El sistema validará que el stock no quede en negativo.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="observaciones_egreso" class="form-label">Observaciones</label>
+              <input type="text"
+                     id="observaciones_egreso"
+                     name="observaciones"
+                     class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-dark">Confirmar egreso</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ajuste de stock -->
+  <div class="modal fade" id="modalAjuste" tabindex="-1" aria-labelledby="modalAjusteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form method="post" action="{% url 'registrar_movimiento' %}">
+          {% csrf_token %}
+          <input type="hidden" name="tipo" value="AJUSTE">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalAjusteLabel">Ajuste de stock</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="valor_qr_ajuste" class="form-label">Artículo</label>
+              <input type="text"
+                        id="valor_qr_ajuste"
+                        name="valor_qr"
+                        class="form-control"
+                        required
+                        placeholder="Escaneá o escribí para buscar"
+                        list="articulos_datalist">
+
+            </div>
+
+            <div class="mb-3">
+              <label for="cantidad_ajuste" class="form-label">Cantidad (puede ser negativa)</label>
+              <input type="number"
+                     id="cantidad_ajuste"
+                     name="cantidad"
+                     class="form-control"
+                     step="1"
+                     required>
+              <div class="form-text">
+                Usá valores positivos para sumar stock y negativos para descontar.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="observaciones_ajuste" class="form-label">Motivo del ajuste</label>
+              <input type="text"
+                     id="observaciones_ajuste"
+                     name="observaciones"
+                     class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-dark">Confirmar ajuste</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

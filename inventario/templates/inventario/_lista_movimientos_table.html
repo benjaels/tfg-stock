@@ -1,0 +1,72 @@
+<div class="table-responsive">
+  <table class="table table-sm table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Fecha y hora</th>
+        <th>Artículo</th>
+        <th>Tipo</th>
+        <th class="text-end">Cantidad</th>
+        <th>Usuario</th>
+        <th>Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for mov in page_obj.object_list %}
+        <tr>
+          <td>{{ mov.fecha_hora|date:"Y-m-d H:i" }}</td>
+          <td>{{ mov.articulo.codigo }} - {{ mov.articulo.descripcion }}</td>
+          <td class="fw-bold
+                     {% if mov.tipo == 'INGRESO' %}text-success
+                     {% elif mov.tipo == 'EGRESO' %}text-danger
+                     {% elif mov.tipo == 'AJUSTE' %}text-primary
+                     {% endif %}">
+            {{ mov.get_tipo_display }}
+          </td>
+          <td class="text-end">{{ mov.cantidad }}</td>
+          <td>{{ mov.usuario }}</td>
+          <td>{{ mov.observaciones }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="6" class="text-center text-muted">No hay movimientos registrados.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<nav class="mt-3">
+  <ul class="pagination pagination-sm">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a
+          class="page-link"
+          hx-get="{% url 'lista_movimientos_parcial' %}?page={{ page_obj.previous_page_number }}"
+          hx-target="#tabla-movimientos"
+          hx-swap="innerHTML"
+        >
+          Anterior
+        </a>
+      </li>
+    {% endif %}
+
+    <li class="page-item active">
+      <span class="page-link">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+      </span>
+    </li>
+
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a
+          class="page-link"
+          hx-get="{% url 'lista_movimientos_parcial' %}?page={{ page_obj.next_page_number }}"
+          hx-target="#tabla-movimientos"
+          hx-swap="innerHTML"
+        >
+          Siguiente
+        </a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>

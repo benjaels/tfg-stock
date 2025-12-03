@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Insumos{% endblock %}
+
+{% block content %}
+  <h1 class="h3 fw-bold mb-3">Insumos</h1>
+
+  <section class="bg-white rounded-4 shadow-sm p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <p class="mb-0 text-muted">
+          Listado de artículos con su stock actual, stock mínimo y ubicación.
+        </p>
+      </div>
+      <div class="btn-group">
+        <a href="{% url 'registrar_recepcion' %}" class="btn btn-sm btn-outline-dark">
+          Registrar recepción
+        </a>
+        <a href="{% url 'lista_movimientos' %}" class="btn btn-sm btn-outline-secondary">
+          Ver movimientos
+        </a>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 12%;">Código</th>
+            <th>Descripción</th>
+            <th class="text-end" style="width: 10%;">Stock actual</th>
+            <th class="text-end" style="width: 10%;">Stock mínimo</th>
+            <th style="width: 18%;">Ubicación</th>
+            <th style="width: 12%;">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for art in articulos %}
+            <tr class="{% if art.stock_actual < art.stock_minimo %}table-danger{% endif %}">
+              <td class="fw-semibold">{{ art.codigo }}</td>
+              <td>{{ art.descripcion }}</td>
+              <td class="text-end">{{ art.stock_actual }}</td>
+              <td class="text-end">{{ art.stock_minimo }}</td>
+              <td>{{ art.ubicacion }}</td>
+              <td>
+                {% if art.stock_actual < art.stock_minimo %}
+                  <span class="badge text-bg-danger">Bajo mínimo</span>
+                {% else %}
+                  <span class="badge text-bg-success">OK</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">
+                No hay artículos cargados.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}
