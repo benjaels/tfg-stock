@@ -3,253 +3,350 @@
 {% block title %}Movimientos{% endblock %}
 
 {% block content %}
-  <h1 class="h3 fw-bold mb-3">Movimientos</h1>
+  <h1 class="h3 fw-bold mb-3">Movimientos de stock</h1>
 
   <section class="bg-white rounded-4 shadow-sm p-4">
 
-      <!-- Botones de acciones (abren modales) -->
-    <div class="row gx-3 mb-4">
-      <div class="col-md-4 mb-2">
-        <button type="button"
-                class="btn btn-dark w-100"
-                data-bs-toggle="modal"
-                data-bs-target="#modalIngreso">
-          Nuevo ingreso
+    <!-- Botones de acción -->
+    <div class="row gx-3 mb-5">
+      <div class="col-md-4 mb-3">
+        <button class="btn btn-primary w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalIngreso">
+          <i class="bi bi-arrow-down"></i> Ingreso de material
         </button>
       </div>
-      <div class="col-md-4 mb-2">
-        <button type="button"
-                class="btn btn-outline-secondary w-100"
-                data-bs-toggle="modal"
-                data-bs-target="#modalEgreso">
-          Nuevo egreso
+      <div class="col-md-4 mb-3">
+        <button class="btn btn-danger w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEgreso">
+          <i class="bi bi-arrow-up"></i> Egreso de material
         </button>
       </div>
-      <div class="col-md-4 mb-2">
-        <button type="button"
-                class="btn btn-outline-secondary w-100"
-                data-bs-toggle="modal"
-                data-bs-target="#modalAjuste">
-          Ajuste de stock
+      <div class="col-md-4 mb-3">
+        <button class="btn btn-warning w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalAjuste">
+          <i class="bi bi-arrow-left-right"></i> Ajuste de stock
         </button>
       </div>
     </div>
 
-    <!-- Buscador manual de artículos: se usa en los tres modales -->
-    <datalist id="articulos_datalist">
-  {% for art in articulos %}
-    <option value="{{ art.valor_qr }}">
-      {{ art.codigo }} - {{ art.descripcion }}
-    </option>
-  {% endfor %}
-</datalist>
+    <!-- Tabla de movimientos -->
+    <div class="mt-5">
+      <h3 class="h5 fw-bold mb-3">Últimos movimientos</h3>
+      
+      <!-- Cabecera tipo tabla -->
+      <div class="rounded-3 bg-secondary bg-opacity-10 px-3 py-2 fw-semibold d-flex mb-2">
+        <div style="width: 16%;">Código</div>
+        <div style="width: 34%;">Nombre</div>
+        <div style="width: 16%;">Fecha</div>
+        <div style="width: 10%;">Tipo</div>
+        <div class="text-end" style="width: 12%;">Cantidad</div>
+        <div style="width: 12%;">Usuario</div>
+      </div>
 
-    <!-- Cabecera tipo tabla -->
-    <div class="rounded-3 bg-secondary bg-opacity-10 px-3 py-2 fw-semibold d-flex mb-2">
-      <div style="width: 16%;">Código</div>
-      <div style="width: 34%;">Nombre</div>
-      <div style="width: 16%;">Fecha</div>
-      <div style="width: 10%;">Tipo</div>
-      <div class="text-end" style="width: 12%;">Cantidad</div>
-      <div style="width: 12%;">Usuario</div>
-    </div>
-
-    <!-- Lista de últimos movimientos -->
-    <div>
-      {% for mov in movimientos %}
-        <div class="d-flex align-items-center bg-white border rounded-3 px-3 py-2 mb-2">
-          <div style="width: 16%;" class="fw-semibold">
-            {{ mov.articulo.codigo }}
+      <!-- Lista de últimos movimientos -->
+      <div>
+        {% for mov in movimientos %}
+          <div class="d-flex align-items-center bg-white border rounded-3 px-3 py-2 mb-2">
+            <div style="width: 16%;" class="fw-semibold">
+              {{ mov.articulo.codigo }}
+            </div>
+            <div style="width: 34%;">
+              {{ mov.articulo.descripcion }}
+            </div>
+            <div style="width: 16%;">
+              {{ mov.fecha_hora|date:"d/m/Y" }}
+            </div>
+            <div style="width: 10%;">
+              {{ mov.get_tipo_display }}
+            </div>
+            <div style="width: 12%;" class="text-end">
+              {{ mov.cantidad }}
+            </div>
+            <div style="width: 12%;">
+              {{ mov.usuario }}
+            </div>
           </div>
-          <div style="width: 34%;">
-            {{ mov.articulo.descripcion }}
+        {% empty %}
+          <div class="text-center text-muted py-4">
+            No hay movimientos registrados.
           </div>
-          <div style="width: 16%;">
-            {{ mov.fecha_hora|date:"d/m/Y" }}
-          </div>
-          <div style="width: 10%;">
-            {{ mov.get_tipo_display }}
-          </div>
-          <div style="width: 12%;" class="text-end">
-            {{ mov.cantidad }}
-          </div>
-          <div style="width: 12%;">
-            {{ mov.usuario }}
-          </div>
-        </div>
-      {% empty %}
-        <div class="text-center text-muted py-4">
-          No hay movimientos registrados.
-        </div>
-      {% endfor %}
+        {% endfor %}
+      </div>
     </div>
 
   </section>
 
-  {# ===================== MODALES ===================== #}
+  <!-- Modales de acciones -->
 
-  <!-- Modal: Nuevo ingreso -->
-  <div class="modal fade" id="modalIngreso" tabindex="-1" aria-labelledby="modalIngresoLabel" aria-hidden="true">
+  <!-- Modal: Ingreso de material -->
+  <div class="modal fade" id="modalIngreso" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form method="post" action="{% url 'registrar_movimiento' %}">
-          {% csrf_token %}
-          <input type="hidden" name="tipo" value="INGRESO">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalIngresoLabel">Nuevo ingreso de stock</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-          </div>
-          <div class="modal-body">
+      <div class="modal-content rounded-4">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Entrada de insumos</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formIngreso" method="post" action="{% url 'registrar_movimiento' %}">
+            {% csrf_token %}
+            <input type="hidden" name="tipo" value="INGRESO">
+            <input type="hidden" id="ingresoValorQR" name="valor_qr" value="">
+            
             <div class="mb-3">
-              <label for="valor_qr_ingreso" class="form-label">Artículo</label>
-                <input type="text"
-                id="valor_qr_ingreso"
-                name="valor_qr"
-                class="form-control"
-                required
-                placeholder="Escaneá o escribí para buscar"
-                list="articulos_datalist">
-
-              <div class="form-text">
-                Podés escanear el código QR o escribir para buscar por código/nombre.
-              </div>
+              <label for="ingresoCodigoInput" class="form-label fw-semibold">Código</label>
+              <input type="text" class="form-control rounded-3" id="ingresoCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off">
+              <div id="ingresoSugerencias" class="list-group mt-2" style="display: none; max-height: 250px; overflow-y: auto;"></div>
             </div>
 
             <div class="mb-3">
-              <label for="cantidad_ingreso" class="form-label">Cantidad</label>
-              <input type="number"
-                     id="cantidad_ingreso"
-                     name="cantidad"
-                     class="form-control"
-                     min="1"
-                     step="1"
-                     required>
+              <label for="ingresoNombre" class="form-label fw-semibold">Nombre</label>
+              <input type="text" class="form-control rounded-3" id="ingresoNombre" readonly style="background-color: #f5f5f5;">
             </div>
 
             <div class="mb-3">
-              <label for="observaciones_ingreso" class="form-label">Observaciones</label>
-              <input type="text"
-                     id="observaciones_ingreso"
-                     name="observaciones"
-                     class="form-control">
+              <label for="ingresoUbicacion" class="form-label fw-semibold">Ubicación</label>
+              <input type="text" class="form-control rounded-3" id="ingresoUbicacion" readonly style="background-color: #f5f5f5;">
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-dark">Confirmar ingreso</button>
-          </div>
-        </form>
+
+            <div class="mb-3">
+              <label for="ingresoCantidad" class="form-label fw-semibold">Cantidad a ingresar</label>
+              <input type="number" class="form-control rounded-3" id="ingresoCantidad" name="cantidad" min="0.01" step="0.01" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="ingresoProveedor" class="form-label fw-semibold">Proveedor</label>
+              <input type="text" class="form-control rounded-3" id="ingresoProveedor" name="proveedor" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="ingresoMotivo" class="form-label fw-semibold">Motivo</label>
+              <select class="form-select rounded-3" id="ingresoMotivo" name="observaciones" required>
+                <option value="">Seleccionar motivo...</option>
+                <option value="Compra">Compra</option>
+                <option value="Devolución">Devolución</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" form="formIngreso" class="btn btn-dark rounded-3">Guardar cambios</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Nuevo egreso -->
-  <div class="modal fade" id="modalEgreso" tabindex="-1" aria-labelledby="modalEgresoLabel" aria-hidden="true">
+  <!-- Modal: Egreso de material -->
+  <div class="modal fade" id="modalEgreso" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form method="post" action="{% url 'registrar_movimiento' %}">
-          {% csrf_token %}
-          <input type="hidden" name="tipo" value="EGRESO">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalEgresoLabel">Nuevo egreso de stock</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-          </div>
-          <div class="modal-body">
+      <div class="modal-content rounded-4">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Salida de insumos</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formEgreso" method="post" action="{% url 'registrar_movimiento' %}">
+            {% csrf_token %}
+            <input type="hidden" name="tipo" value="EGRESO">
+            <input type="hidden" id="egresoValorQR" name="valor_qr" value="">
+            
             <div class="mb-3">
-              <label for="valor_qr_egreso" class="form-label">Artículo</label>
-                 <input type="text"
-                    id="valor_qr_egreso"
-                    name="valor_qr"
-                    class="form-control"
-                    required
-                    placeholder="Escaneá o escribí para buscar"
-                    list="articulos_datalist">
-
+              <label for="egresoCodigoInput" class="form-label fw-semibold">Código</label>
+              <input type="text" class="form-control rounded-3" id="egresoCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off">
+              <div id="egresoSugerencias" class="list-group mt-2" style="display: none; max-height: 250px; overflow-y: auto;"></div>
             </div>
 
             <div class="mb-3">
-              <label for="cantidad_egreso" class="form-label">Cantidad</label>
-              <input type="number"
-                     id="cantidad_egreso"
-                     name="cantidad"
-                     class="form-control"
-                     min="1"
-                     step="1"
-                     required>
-              <div class="form-text text-danger">
-                El sistema validará que el stock no quede en negativo.
-              </div>
+              <label for="egresoNombre" class="form-label fw-semibold">Nombre</label>
+              <input type="text" class="form-control rounded-3" id="egresoNombre" readonly style="background-color: #f5f5f5;">
             </div>
 
             <div class="mb-3">
-              <label for="observaciones_egreso" class="form-label">Observaciones</label>
-              <input type="text"
-                     id="observaciones_egreso"
-                     name="observaciones"
-                     class="form-control">
+              <label for="egresoUbicacion" class="form-label fw-semibold">Ubicación</label>
+              <input type="text" class="form-control rounded-3" id="egresoUbicacion" readonly style="background-color: #f5f5f5;">
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-dark">Confirmar egreso</button>
-          </div>
-        </form>
+
+            <div class="mb-3">
+              <label for="egresoCantidad" class="form-label fw-semibold">Cantidad a egresar</label>
+              <input type="number" class="form-control rounded-3" id="egresoCantidad" name="cantidad" min="0.01" step="0.01" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="egresoMotivo" class="form-label fw-semibold">Motivo</label>
+              <select class="form-select rounded-3" id="egresoMotivo" name="observaciones" required>
+                <option value="">Seleccionar motivo...</option>
+                <option value="Venta">Venta</option>
+                <option value="Devolución">Devolución</option>
+                <option value="Pérdida">Pérdida</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" form="formEgreso" class="btn btn-dark rounded-3">Guardar cambios</button>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Modal: Ajuste de stock -->
-  <div class="modal fade" id="modalAjuste" tabindex="-1" aria-labelledby="modalAjusteLabel" aria-hidden="true">
+  <div class="modal fade" id="modalAjuste" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <form method="post" action="{% url 'registrar_movimiento' %}">
-          {% csrf_token %}
-          <input type="hidden" name="tipo" value="AJUSTE">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalAjusteLabel">Ajuste de stock</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-          </div>
-          <div class="modal-body">
+      <div class="modal-content rounded-4">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Ajuste de stock</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="formAjuste" method="post" action="{% url 'registrar_movimiento' %}">
+            {% csrf_token %}
+            <input type="hidden" name="tipo" value="AJUSTE">
+            <input type="hidden" id="ajusteValorQR" name="valor_qr" value="">
+            
             <div class="mb-3">
-              <label for="valor_qr_ajuste" class="form-label">Artículo</label>
-              <input type="text"
-                        id="valor_qr_ajuste"
-                        name="valor_qr"
-                        class="form-control"
-                        required
-                        placeholder="Escaneá o escribí para buscar"
-                        list="articulos_datalist">
-
+              <label for="ajusteCodigoInput" class="form-label fw-semibold">Código</label>
+              <input type="text" class="form-control rounded-3" id="ajusteCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off">
+              <div id="ajusteSugerencias" class="list-group mt-2" style="display: none; max-height: 250px; overflow-y: auto;"></div>
             </div>
 
             <div class="mb-3">
-              <label for="cantidad_ajuste" class="form-label">Cantidad (puede ser negativa)</label>
-              <input type="number"
-                     id="cantidad_ajuste"
-                     name="cantidad"
-                     class="form-control"
-                     step="1"
-                     required>
-              <div class="form-text">
-                Usá valores positivos para sumar stock y negativos para descontar.
-              </div>
+              <label for="ajusteNombre" class="form-label fw-semibold">Nombre</label>
+              <input type="text" class="form-control rounded-3" id="ajusteNombre" readonly style="background-color: #f5f5f5;">
             </div>
 
             <div class="mb-3">
-              <label for="observaciones_ajuste" class="form-label">Motivo del ajuste</label>
-              <input type="text"
-                     id="observaciones_ajuste"
-                     name="observaciones"
-                     class="form-control">
+              <label for="ajusteUbicacion" class="form-label fw-semibold">Ubicación</label>
+              <input type="text" class="form-control rounded-3" id="ajusteUbicacion" readonly style="background-color: #f5f5f5;">
             </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-dark">Confirmar ajuste</button>
-          </div>
-        </form>
+
+            <div class="mb-3">
+              <label for="ajusteCantidad" class="form-label fw-semibold">Cantidad (positiva o negativa)</label>
+              <input type="number" class="form-control rounded-3" id="ajusteCantidad" name="cantidad" step="0.01" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="ajusteMotivo" class="form-label fw-semibold">Motivo</label>
+              <select class="form-select rounded-3" id="ajusteMotivo" name="observaciones" required>
+                <option value="">Seleccionar motivo...</option>
+                <option value="Conteo">Conteo</option>
+                <option value="Rotura">Rotura</option>
+                <option value="Pérdida">Pérdida</option>
+                <option value="Corrección">Corrección</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" form="formAjuste" class="btn btn-dark rounded-3">Guardar cambios</button>
+        </div>
       </div>
     </div>
   </div>
 
+  <script>
+    // Función para inicializar autocompletado
+    function inicializarAutocompletado(modalId, codigoInputId, nombreId, ubicacionId, codigoQRId, sugerenciasId) {
+      const input = document.getElementById(codigoInputId);
+      const nombreField = document.getElementById(nombreId);
+      const ubicacionField = document.getElementById(ubicacionId);
+      const codigoQRField = document.getElementById(codigoQRId);
+      const sugerenciasDiv = document.getElementById(sugerenciasId);
+
+      input.addEventListener('input', async function() {
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+          sugerenciasDiv.style.display = 'none';
+          nombreField.value = '';
+          ubicacionField.value = '';
+          codigoQRField.value = '';
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/articulos/buscar/?q=${encodeURIComponent(query)}`);
+          const articulos = await response.json();
+          
+          if (articulos.length === 0) {
+            sugerenciasDiv.innerHTML = '<div class="list-group-item text-muted">No se encontraron artículos</div>';
+            sugerenciasDiv.style.display = 'block';
+            return;
+          }
+
+          sugerenciasDiv.innerHTML = '';
+          articulos.forEach(art => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'list-group-item list-group-item-action';
+            item.textContent = `${art.codigo} - ${art.descripcion}`;
+            item.onclick = (e) => {
+              e.preventDefault();
+              input.value = art.codigo;
+              nombreField.value = art.descripcion;
+              ubicacionField.value = art.ubicacion || '';
+              codigoQRField.value = art.codigo_qr;
+              sugerenciasDiv.style.display = 'none';
+              document.getElementById(modalId).querySelector('input[type="number"]').focus();
+            };
+            sugerenciasDiv.appendChild(item);
+          });
+          sugerenciasDiv.style.display = 'block';
+        } catch (error) {
+          console.error('Error al buscar artículos:', error);
+        }
+      });
+
+      // Cerrar sugerencias al hacer click afuera
+      document.addEventListener('click', function(e) {
+        if (e.target !== input) {
+          sugerenciasDiv.style.display = 'none';
+        }
+      });
+    }
+
+    // Validar y enviar formularios
+    function validarFormulario(formId, codigoQRId) {
+      const form = document.getElementById(formId);
+      form.addEventListener('submit', function(e) {
+        const codigoQRField = document.getElementById(codigoQRId);
+        if (!codigoQRField.value) {
+          e.preventDefault();
+          alert('Por favor seleccione un artículo de la lista');
+          return false;
+        }
+      });
+    }
+
+    // Inicializar autocompletados cuando se abre cada modal
+    document.getElementById('modalIngreso').addEventListener('show.bs.modal', function() {
+      inicializarAutocompletado('modalIngreso', 'ingresoCodigoInput', 'ingresoNombre', 'ingresoUbicacion', 'ingresoValorQR', 'ingresoSugerencias');
+      validarFormulario('formIngreso', 'ingresoValorQR');
+    });
+
+    document.getElementById('modalEgreso').addEventListener('show.bs.modal', function() {
+      inicializarAutocompletado('modalEgreso', 'egresoCodigoInput', 'egresoNombre', 'egresoUbicacion', 'egresoValorQR', 'egresoSugerencias');
+      validarFormulario('formEgreso', 'egresoValorQR');
+    });
+
+    document.getElementById('modalAjuste').addEventListener('show.bs.modal', function() {
+      inicializarAutocompletado('modalAjuste', 'ajusteCodigoInput', 'ajusteNombre', 'ajusteUbicacion', 'ajusteValorQR', 'ajusteSugerencias');
+      validarFormulario('formAjuste', 'ajusteValorQR');
+    });
+
+    // Limpiar campos al cerrar modales
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('hidden.bs.modal', function() {
+        this.querySelector('form').reset();
+        const inputs = this.querySelectorAll('input[readonly]');
+        inputs.forEach(inp => inp.value = '');
+        this.querySelectorAll('[id$="Sugerencias"]').forEach(div => div.style.display = 'none');
+      });
+    });
+  </script>
+
 {% endblock %}
+

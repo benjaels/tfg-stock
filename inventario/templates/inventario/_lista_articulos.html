@@ -1,0 +1,39 @@
+<!-- Cabecera tipo tabla -->
+<div class="rounded-3 bg-secondary bg-opacity-10 px-4 py-3 fw-semibold d-flex mb-2" style="align-items: center;">
+  <div style="width: 12%;">Código <i class="bi bi-arrow-down-up" style="font-size: 0.8rem; margin-left: 0.5rem;"></i></div>
+  <div style="width: 25%;">Nombre</div>
+  <div style="width: 15%;">Unidad</div>
+  <div class="text-end" style="width: 12%;">Stock</div>
+  <div class="text-end" style="width: 12%;">Mínimo</div>
+  <div style="width: 24%;">Ubicación</div>
+</div>
+
+<!-- Lista de artículos -->
+<div id="articulosList">
+  {% for art in articulos %}
+    <div class="d-flex align-items-center bg-white border rounded-3 px-4 py-3 mb-2">
+      <div style="width: 12%;" class="fw-semibold">
+        {{ art.codigo }}
+      </div>
+      <div style="width: 25%;">
+        {{ art.descripcion }}
+      </div>
+      <div style="width: 15%;">
+        {{ art.unidad_medida }}
+      </div>
+      <div class="text-end" style="width: 12%;">
+        {{ art.stock_actual }}
+      </div>
+      <div class="text-end" style="width: 12%;">
+        {{ art.stock_minimo }}
+      </div>
+      <div style="width: 24%;">
+        {{ art.ubicacion }}
+      </div>
+    </div>
+  {% empty %}
+    <div class="text-center text-muted py-4">
+      No hay artículos registrados.
+    </div>
+  {% endfor %}
+</div>

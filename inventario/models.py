@@ -2,12 +2,30 @@ from django.conf import settings
 from django.db import models
 
 
+class Categoria(models.Model):
+    """
+    Categorías para clasificar artículos.
+    """
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+    activa = models.BooleanField(default=True)
+    creada_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["nombre"]
+        verbose_name_plural = "Categorías"
+
+    def __str__(self):
+        return self.nombre
+
+
 class Articulo(models.Model):
     """
     Representa un ítem de stock controlado por el sistema.
     """
     codigo = models.CharField(max_length=50, unique=True)
     descripcion = models.CharField(max_length=255)
+    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True, related_name="articulos")
     unidad_medida = models.CharField(max_length=20, default="unidad")  # ej: unidad, kg, caja
     stock_actual = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     stock_minimo = models.DecimalField(max_digits=10, decimal_places=2, default=0)

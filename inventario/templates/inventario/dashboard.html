@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+  <h1 class="h3 fw-bold mb-3">Dashboard</h1>
+
+  <section class="bg-white rounded-4 shadow-sm p-4">
+
+    <!-- Paneles de información -->
+    <div class="row gx-3 mb-5">
+      <div class="col-md-6 mb-3">
+        <div class="card border-0 rounded-4 shadow-sm bg-light">
+          <div class="card-body text-center py-5">
+            <p class="text-muted mb-2">Items con bajo stock</p>
+            <h2 class="display-5 fw-bold">{{ items_bajo_minimo }}</h2>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mb-3">
+        <div class="card border-0 rounded-4 shadow-sm bg-light">
+          <div class="card-body text-center py-5">
+            <p class="text-muted mb-2">Órdenes de compra pendientes</p>
+            <h2 class="display-5 fw-bold">{{ ordenes_pendientes }}</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de artículos -->
+    <div class="mt-5">
+      <h3 class="h5 fw-bold mb-3">Artículos principales</h3>
+      
+      <!-- Cabecera tipo tabla -->
+      <div class="rounded-3 bg-secondary bg-opacity-10 px-3 py-2 fw-semibold d-flex mb-2">
+        <div style="width: 15%;">Código</div>
+        <div style="width: 50%;">Nombre</div>
+        <div class="text-end" style="width: 15%;">Stock</div>
+      </div>
+
+      <!-- Lista de artículos -->
+      <div>
+        {% for art in articulos|slice:":10" %}
+          <div class="d-flex align-items-center border rounded-3 px-3 py-2 mb-2 {% if art.stock_actual < art.stock_minimo %}bg-danger bg-opacity-10{% else %}bg-white{% endif %}">
+            <div style="width: 15%;" class="fw-semibold">
+              {{ art.codigo }}
+            </div>
+            <div style="width: 50%;">
+              {{ art.descripcion }}
+            </div>
+            <div class="text-end" style="width: 15%;">
+              {{ art.stock_actual }}
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center text-muted py-4">
+            No hay artículos registrados.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Tabla de movimientos -->
+    <div class="mt-5">
+      <h3 class="h5 fw-bold mb-3">Últimos movimientos</h3>
+      
+      <!-- Cabecera tipo tabla -->
+      <div class="rounded-3 bg-secondary bg-opacity-10 px-3 py-2 fw-semibold d-flex mb-2">
+        <div style="width: 16%;">Código</div>
+        <div style="width: 34%;">Nombre</div>
+        <div style="width: 16%;">Fecha</div>
+        <div style="width: 10%;">Tipo</div>
+        <div class="text-end" style="width: 12%;">Cantidad</div>
+        <div style="width: 12%;">Usuario</div>
+      </div>
+
+      <!-- Lista de últimos movimientos -->
+      <div>
+        {% for mov in movimientos %}
+          <div class="d-flex align-items-center bg-white border rounded-3 px-3 py-2 mb-2">
+            <div style="width: 16%;" class="fw-semibold">
+              {{ mov.articulo.codigo }}
+            </div>
+            <div style="width: 34%;">
+              {{ mov.articulo.descripcion }}
+            </div>
+            <div style="width: 16%;">
+              {{ mov.fecha_hora|date:"d/m/Y" }}
+            </div>
+            <div style="width: 10%;">
+              {{ mov.get_tipo_display }}
+            </div>
+            <div style="width: 12%;" class="text-end">
+              {{ mov.cantidad }}
+            </div>
+            <div style="width: 12%;">
+              {{ mov.usuario }}
+            </div>
+          </div>
+        {% empty %}
+          <div class="text-center text-muted py-4">
+            No hay movimientos registrados.
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </section>
+
+{% endblock %}

@@ -1,25 +1,27 @@
+# stock_app/urls.py  (URLS DEL PROYECTO)
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
-from inventario.views import (
-    lista_articulos,        # va a ser el Dashboard
-    lista_insumos,          # nueva vista de Insumos
-    registrar_recepcion_simple,
-    registrar_movimiento_simple,
-    lista_movimientos,
-)
+# Acá importamos las vistas DESDE LA APP inventario
+from inventario import views
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    # Admin de Django
+    path('admin/', admin.site.urls),
 
-    # Dashboard en la raíz
-    path("", lista_articulos, name="dashboard"),
+    # Autenticación: /accounts/login/, /accounts/logout/, etc.
+    path('accounts/', include('django.contrib.auth.urls')),
 
-    # Insumos
-    path("insumos/", lista_insumos, name="lista_insumos"),
+    # --------- RUTAS PRINCIPALES DEL SISTEMA ---------
+    # Dashboard
+    path('', views.dashboard, name='dashboard'),
 
-    # Recepciones y movimientos
-    path("recepciones/nueva/", registrar_recepcion_simple, name="registrar_recepcion"),
-    path("movimientos/nuevo/", registrar_movimiento_simple, name="registrar_movimiento"),
-    path("movimientos/", lista_movimientos, name="lista_movimientos"),
+    path('insumos/', views.lista_insumos, name='lista_insumos'),
+    path('insumos/crear/', views.crear_articulo, name='crear_articulo'),
+    path('insumos/categorias/crear/', views.crear_categoria, name='crear_categoria'),
+    path('api/articulos/buscar/', views.buscar_articulos_ajax, name='buscar_articulos_ajax'),
+
+    path('recepciones/nueva/', views.registrar_recepcion_simple, name='registrar_recepcion_simple'),
+    path('movimientos/nuevo/', views.registrar_movimiento_simple, name='registrar_movimiento'),
+    path('movimientos/', views.lista_movimientos, name='lista_movimientos'),
 ]
