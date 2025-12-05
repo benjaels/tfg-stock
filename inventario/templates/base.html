@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!doctype html>
 <html lang="es">
   <head>
@@ -86,8 +86,8 @@
   <li class="nav-item ms-3">
     <form method="post" action="{% url 'logout' %}" style="display: inline;">
       {% csrf_token %}
-      <button type="submit" class="nav-link btn btn-outline-danger rounded-2 border-0" style="cursor: pointer;">
-        Cerrar sesión
+      <button type="submit" class="nav-link btn border border-2 border-dark rounded-2 px-3 py-1 text-dark fw-semibold" style="cursor: pointer;">
+        Cerrar sesion
       </button>
     </form>
   </li>
@@ -108,3 +108,6 @@
     {% block extra_js %}{% endblock %}
   </body>
 </html>
+
+
+

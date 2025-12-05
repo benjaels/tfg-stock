@@ -61,6 +61,20 @@
       </div>
 
       <div class="col-md-4">
+        <label for="proveedor" class="form-label">Proveedor (opcional)</label>
+        <select id="proveedor" name="proveedor_id" class="form-select">
+          <option value="">Seleccionar proveedor...</option>
+          {% if proveedores %}
+            {% for prov in proveedores %}
+              <option value="{{ prov.id }}">{{ prov.razon_social }}</option>
+            {% endfor %}
+          {% else %}
+            <option value="" disabled>No hay proveedores</option>
+          {% endif %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
         <label for="cantidad" class="form-label">Cantidad</label>
         <input type="number" step="1" id="cantidad" name="cantidad" class="form-control" required
                placeholder="Para AJUSTE podés usar valores negativos">

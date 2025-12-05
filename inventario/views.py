@@ -20,8 +20,7 @@ def lista_articulos(request):
         stock_actual__lt=F("stock_minimo")
     ).count()
 
-    # Placeholder: cuando tengas el modelo OrdenCompra, reemplazás este cálculo
-    ordenes_pendientes = 0
+    ordenes_pendientes = OrdenCompra.objects.filter(estado=OrdenCompra.ESTADO_PENDIENTE).count()
 
     # Ordenar los artículos: primero los críticos (stock < mínimo), luego el resto
     articulos = (
@@ -118,12 +117,23 @@ def registrar_movimiento_simple(request):
     Permite ingresos, egresos y ajustes.
     """
     if request.method != "POST":
-        return redirect("lista_movimientos")
+        proveedores = Proveedor.objects.all().order_by("razon_social")
+        return render(request, "inventario/registrar_movimiento.html", {"proveedores": proveedores})
     
     tipo = request.POST.get("tipo")
     valor_qr = request.POST.get("valor_qr", "").strip()
     cantidad_str = request.POST.get("cantidad", "").strip()
     observaciones = request.POST.get("observaciones", "").strip()
+    proveedor_id = request.POST.get("proveedor_id", "").strip()
+    proveedor_nombre = ""
+
+    if proveedor_id:
+        try:
+            proveedor_obj = Proveedor.objects.get(id=proveedor_id)
+            proveedor_nombre = proveedor_obj.razon_social
+        except Proveedor.DoesNotExist:
+            messages.error(request, "Proveedor inválido.")
+            return redirect("lista_movimientos")
 
     if not tipo or not valor_qr or not cantidad_str:
         messages.error(request, "Tipo de movimiento, código QR y cantidad son obligatorios.")
@@ -190,7 +200,7 @@ def registrar_movimiento_simple(request):
         articulo=articulo,
         tipo=tipo,
         cantidad=cantidad_mov,
-        observaciones=observaciones,
+        observaciones=(f"{observaciones} (Proveedor: {proveedor_nombre})" if proveedor_nombre else observaciones),
         usuario=request.user,
     )
 
@@ -208,8 +218,7 @@ def dashboard(request):
         stock_actual__lt=F("stock_minimo")
     ).count()
 
-    # Placeholder: cuando tengas el modelo OrdenCompra, reemplazás este cálculo
-    ordenes_pendientes = 0
+    ordenes_pendientes = OrdenCompra.objects.filter(estado=OrdenCompra.ESTADO_PENDIENTE).count()
 
     # Últimos 50 movimientos, más recientes primero
     movimientos = (
@@ -240,10 +249,12 @@ def lista_movimientos(request):
 
     # Artículos ordenados por código
     articulos = Articulo.objects.all().order_by("codigo")
+    proveedores = Proveedor.objects.all().order_by("razon_social")
 
     contexto = {
         "movimientos": movimientos,
         "articulos": articulos,
+        "proveedores": proveedores,
     }
     return render(request, "inventario/lista_movimientos.html", contexto)
 

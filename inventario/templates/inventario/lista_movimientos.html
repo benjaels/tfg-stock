@@ -10,17 +10,17 @@
     <!-- Botones de acción -->
     <div class="row gx-3 mb-5">
       <div class="col-md-4 mb-3">
-        <button class="btn btn-primary w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalIngreso">
+        <button class="btn btn-dark w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalIngreso">
           <i class="bi bi-arrow-down"></i> Ingreso de material
         </button>
       </div>
       <div class="col-md-4 mb-3">
-        <button class="btn btn-danger w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEgreso">
+        <button class="btn btn-outline-dark w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalEgreso">
           <i class="bi bi-arrow-up"></i> Egreso de material
         </button>
       </div>
       <div class="col-md-4 mb-3">
-        <button class="btn btn-warning w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalAjuste">
+        <button class="btn btn-outline-secondary w-100 rounded-3 py-3 fw-semibold" data-bs-toggle="modal" data-bs-target="#modalAjuste">
           <i class="bi bi-arrow-left-right"></i> Ajuste de stock
         </button>
       </div>
@@ -73,6 +73,13 @@
 
   </section>
 
+  <datalist id="articulosDatalistMov">
+    {% for art in articulos %}
+      <option value="{{ art.codigo }} - {{ art.descripcion }}"></option>
+      <option value="{{ art.codigo }}"></option>
+    {% endfor %}
+  </datalist>
+
   <!-- Modales de acciones -->
 
   <!-- Modal: Ingreso de material -->
@@ -90,8 +97,18 @@
             <input type="hidden" id="ingresoValorQR" name="valor_qr" value="">
             
             <div class="mb-3">
+              <label for="ingresoProveedor" class="form-label fw-semibold">Proveedor (opcional)</label>
+              <select class="form-select rounded-3" id="ingresoProveedor" name="proveedor_id">
+                <option value="">Seleccionar proveedor...</option>
+                {% for prov in proveedores %}
+                  <option value="{{ prov.id }}">{{ prov.razon_social }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
               <label for="ingresoCodigoInput" class="form-label fw-semibold">Código</label>
-              <input type="text" class="form-control rounded-3" id="ingresoCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off">
+              <input type="text" class="form-control rounded-3" id="ingresoCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off" list="articulosDatalistMov">
               <div id="ingresoSugerencias" class="list-group mt-2" style="display: none; max-height: 250px; overflow-y: auto;"></div>
             </div>
 
@@ -108,11 +125,6 @@
             <div class="mb-3">
               <label for="ingresoCantidad" class="form-label fw-semibold">Cantidad a ingresar</label>
               <input type="number" class="form-control rounded-3" id="ingresoCantidad" name="cantidad" min="0.01" step="0.01" required>
-            </div>
-
-            <div class="mb-3">
-              <label for="ingresoProveedor" class="form-label fw-semibold">Proveedor</label>
-              <input type="text" class="form-control rounded-3" id="ingresoProveedor" name="proveedor" required>
             </div>
 
             <div class="mb-3">
@@ -150,8 +162,18 @@
             <input type="hidden" id="egresoValorQR" name="valor_qr" value="">
             
             <div class="mb-3">
+              <label for="egresoProveedor" class="form-label fw-semibold">Proveedor (opcional)</label>
+              <select class="form-select rounded-3" id="egresoProveedor" name="proveedor_id">
+                <option value="">Seleccionar proveedor...</option>
+                {% for prov in proveedores %}
+                  <option value="{{ prov.id }}">{{ prov.razon_social }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
               <label for="egresoCodigoInput" class="form-label fw-semibold">Código</label>
-              <input type="text" class="form-control rounded-3" id="egresoCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off">
+              <input type="text" class="form-control rounded-3" id="egresoCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off" list="articulosDatalistMov">
               <div id="egresoSugerencias" class="list-group mt-2" style="display: none; max-height: 250px; overflow-y: auto;"></div>
             </div>
 
@@ -205,8 +227,18 @@
             <input type="hidden" id="ajusteValorQR" name="valor_qr" value="">
             
             <div class="mb-3">
+              <label for="ajusteProveedor" class="form-label fw-semibold">Proveedor (opcional)</label>
+              <select class="form-select rounded-3" id="ajusteProveedor" name="proveedor_id">
+                <option value="">Seleccionar proveedor...</option>
+                {% for prov in proveedores %}
+                  <option value="{{ prov.id }}">{{ prov.razon_social }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
               <label for="ajusteCodigoInput" class="form-label fw-semibold">Código</label>
-              <input type="text" class="form-control rounded-3" id="ajusteCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off">
+              <input type="text" class="form-control rounded-3" id="ajusteCodigoInput" placeholder="Ingrese código, nombre o QR" autocomplete="off" list="articulosDatalistMov">
               <div id="ajusteSugerencias" class="list-group mt-2" style="display: none; max-height: 250px; overflow-y: auto;"></div>
             </div>
 
