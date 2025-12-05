@@ -41,7 +41,9 @@
       <!-- Lista de artículos -->
       <div>
         {% for art in articulos|slice:":10" %}
-          <div class="d-flex align-items-center border rounded-3 px-3 py-2 mb-2 {% if art.stock_actual < art.stock_minimo %}bg-danger bg-opacity-10{% else %}bg-white{% endif %}">
+          <div class="d-flex align-items-center border rounded-3 px-3 py-2 mb-2 {% if art.stock_actual < art.stock_minimo %}bg-danger bg-opacity-10{% else %}bg-white{% endif %} cursor-pointer"
+               role="button"
+               onclick="abrirModalEditar({{ art.id }})">
             <div style="width: 15%;" class="fw-semibold">
               {{ art.codigo }}
             </div>
@@ -106,5 +108,125 @@
     </div>
 
   </section>
+
+  <!-- Modal: Editar artículo -->
+  <div class="modal fade" id="modalEditarInsumo" tabindex="-1" aria-labelledby="modalEditarInsumoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="modalEditarInsumoLabel">Editar artículo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <form id="formEditarInsumo" method="post" action="{% url 'actualizar_articulo' %}">
+          {% csrf_token %}
+          <input type="hidden" id="articulo_id" name="articulo_id" value="">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="edit_codigo" class="form-label">Código</label>
+              <input type="text" id="edit_codigo" name="codigo" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="edit_nombre" class="form-label">Nombre</label>
+              <input type="text" id="edit_nombre" name="descripcion" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="edit_stock_minimo" class="form-label">Stock mínimo</label>
+              <input type="number" id="edit_stock_minimo" name="stock_minimo" class="form-control rounded-3" step="0.01" required>
+            </div>
+            <div class="mb-3">
+              <label for="edit_categoria" class="form-label">Categoría</label>
+              <select id="edit_categoria" name="categoria" class="form-select rounded-3">
+                {% for cat in categorias %}
+                  <option value="{{ cat.id }}" data-prefijo="{{ cat.prefijo }}">{{ cat.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="edit_ubicacion" class="form-label">Ubicación</label>
+              <input type="text" id="edit_ubicacion" name="ubicacion" class="form-control rounded-3">
+            </div>
+            <div class="mb-3">
+              <label for="edit_unidad_medida" class="form-label">Unidad de medida</label>
+              <input type="text" id="edit_unidad_medida" name="unidad_medida" class="form-control rounded-3">
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-3 border-top gap-2">
+            <button type="submit" class="btn btn-dark flex-grow-1 rounded-3 py-2">Guardar cambios</button>
+            <button id="btnEliminarArticulo" type="button" class="btn btn-danger flex-grow-1 rounded-3 py-2">Eliminar artículo</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmar eliminar artículo -->
+  <div class="modal fade" id="modalEliminarArticulo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Eliminar artículo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1">¿Estás seguro de eliminar este artículo?</p>
+          <small class="text-muted">Esta acción no se puede deshacer.</small>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <form id="formEliminarArticulo" method="post" action="">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger w-100 rounded-3 py-2">Eliminar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function abrirModalEditar(articuloId) {
+      try {
+        const response = await fetch(`/insumos/${articuloId}/obtener/`);
+        if (!response.ok) throw new Error('No se pudo cargar el artículo');
+        const data = await response.json();
+
+        document.getElementById('articulo_id').value = data.id || '';
+        document.getElementById('edit_codigo').value = data.codigo || '';
+        document.getElementById('edit_nombre').value = data.descripcion || '';
+        document.getElementById('edit_stock_minimo').value = data.stock_minimo || '';
+        document.getElementById('edit_categoria').value = data.categoria_id || '';
+        document.getElementById('edit_ubicacion').value = data.ubicacion || '';
+        document.getElementById('edit_unidad_medida').value = data.unidad_medida || '';
+
+        const btnEliminar = document.getElementById('btnEliminarArticulo');
+        if (btnEliminar) {
+          btnEliminar.dataset.deleteUrl = `/insumos/${articuloId}/eliminar/`;
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarInsumo'));
+        modal.show();
+      } catch (error) {
+        console.error(error);
+        alert('Error al cargar los datos del artículo.');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnEliminar = document.getElementById('btnEliminarArticulo');
+      const formEliminar = document.getElementById('formEliminarArticulo');
+      const modalEliminarEl = document.getElementById('modalEliminarArticulo');
+      const modalEditarEl = document.getElementById('modalEditarInsumo');
+      if (!btnEliminar || !formEliminar || !modalEliminarEl || !modalEditarEl) return;
+
+      const modalEliminar = new bootstrap.Modal(modalEliminarEl);
+
+      btnEliminar.addEventListener('click', () => {
+        const url = btnEliminar.dataset.deleteUrl;
+        if (!url) return;
+        formEliminar.action = url;
+        const modalEditar = bootstrap.Modal.getInstance(modalEditarEl);
+        if (modalEditar) modalEditar.hide();
+        modalEliminar.show();
+      });
+    });
+  </script>
 
 {% endblock %}

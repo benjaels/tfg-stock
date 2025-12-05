@@ -227,14 +227,27 @@ def dashboard(request):
         .order_by("-fecha_hora")[:50]
     )
 
-    # Artículos ordenados por código
-    articulos = Articulo.objects.all().order_by("codigo")
+    # Artículos ordenados con críticos primero
+    articulos = (
+        Articulo.objects
+        .annotate(
+            critico=Case(
+                When(stock_actual__lt=F("stock_minimo"), then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("-critico", "stock_actual", "codigo")
+    )
+
+    categorias = Categoria.objects.filter(activa=True).order_by("nombre")
 
     contexto = {
         "items_bajo_minimo": items_bajo_minimo,
         "ordenes_pendientes": ordenes_pendientes,
         "movimientos": movimientos,
         "articulos": articulos,
+        "categorias": categorias,
     }
     return render(request, "inventario/dashboard.html", contexto)
 
@@ -865,8 +878,9 @@ def lista_ordenes(request):
     if request.method == "POST":
         proveedor_id = request.POST.get("proveedor", "").strip()
         observaciones = request.POST.get("observaciones", "").strip()
-        articulos_ids = request.POST.getlist("item_articulo")
-        cantidades_str = request.POST.getlist("item_cantidad")
+        articulos_labels = [label.strip() for label in request.POST.getlist("item_articulo_label")]
+        articulos_ids = [art_id.strip() for art_id in request.POST.getlist("item_articulo")]
+        cantidades_str = [cant.strip() for cant in request.POST.getlist("item_cantidad")]
 
         if not proveedor_id:
             messages.error(request, "El proveedor es obligatorio.")
@@ -879,11 +893,10 @@ def lista_ordenes(request):
             return redirect("lista_ordenes")
 
         items = []
-        for art_id, cant_str in zip(articulos_ids, cantidades_str):
-            art_id = art_id.strip()
-            cant_str = cant_str.strip()
-            if not art_id or not cant_str:
+        for label, art_id, cant_str in zip(articulos_labels, articulos_ids, cantidades_str):
+            if (not art_id and not label) or not cant_str:
                 continue
+
             try:
                 cantidad = Decimal(cant_str.replace(",", "."))
                 if cantidad <= 0:
@@ -891,11 +904,23 @@ def lista_ordenes(request):
             except (InvalidOperation, ValueError):
                 messages.error(request, "Las cantidades deben ser números mayores que cero.")
                 return redirect("lista_ordenes")
-            try:
-                articulo = Articulo.objects.get(id=art_id, activo=True)
-            except Articulo.DoesNotExist:
+
+            articulo = None
+            if art_id:
+                try:
+                    articulo = Articulo.objects.get(id=art_id, activo=True)
+                except Articulo.DoesNotExist:
+                    articulo = None
+
+            if not articulo and label:
+                codigo = label.split(" - ", 1)[0].strip()
+                if codigo:
+                    articulo = Articulo.objects.filter(codigo__iexact=codigo, activo=True).first()
+
+            if not articulo:
                 messages.error(request, "Alguno de los artículos seleccionados no es válido.")
                 return redirect("lista_ordenes")
+
             items.append((articulo, cantidad))
 
         if not items:
@@ -1015,4 +1040,3 @@ def eliminar_orden_compra(request, orden_id):
     orden.delete()
     messages.success(request, f"Orden #{orden.numero} eliminada.")
     return redirect("lista_ordenes")
-

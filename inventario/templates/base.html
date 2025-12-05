@@ -99,15 +99,37 @@
 
     <!-- Contenido de cada página -->
     <main class="container mt-4">
+      {% if messages %}
+        <div class="mb-3" id="flashMessages">
+          {% for message in messages %}
+            <div class="alert
+                        {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %}
+                        alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
       {% block content %}
       {% endblock %}
     </main>
 
     <!-- JS de Bootstrap (por si lo usás en tablas, modales, etc.) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', () => {
+        const container = document.getElementById('flashMessages');
+        if (!container) return;
+        setTimeout(() => {
+          container.querySelectorAll('.alert').forEach(alertEl => {
+            const bsAlert = bootstrap.Alert.getOrCreateInstance(alertEl);
+            bsAlert.close();
+          });
+        }, 5000);
+      });
+    </script>
     {% block extra_js %}{% endblock %}
   </body>
 </html>
-
-
 
