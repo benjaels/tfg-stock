@@ -76,6 +76,13 @@
     </a>
   </li>
 
+  <li class="nav-item">
+    <a class="nav-link {% if section == 'usuarios' %}active{% endif %}"
+       href="{% url 'lista_usuarios' %}">
+      Usuarios
+    </a>
+  </li>
+
   <li class="nav-item ms-3">
     <form method="post" action="{% url 'logout' %}" style="display: inline;">
       {% csrf_token %}

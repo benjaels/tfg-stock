@@ -6,7 +6,12 @@
   <h1 class="h3 fw-bold mb-3">Proveedores</h1>
 
   <section class="bg-white rounded-4 shadow-sm p-4">
-    <div class="mb-3 d-flex justify-content-end">
+    <div class="mb-3 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
+      <form method="get" class="d-flex gap-2 flex-grow-1">
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar proveedor, CUIT o correo">
+        <button type="submit" class="btn btn-dark">Buscar</button>
+        <button type="button" id="btnLimpiarProv" class="btn btn-outline-secondary">Limpiar</button>
+      </form>
       <button 
         class="btn btn-dark rounded-3"
         data-bs-toggle="modal"
@@ -26,7 +31,7 @@
       </div>
 
       {% for prov in proveedores %}
-        <div class="d-flex align-items-center bg-white border rounded-3 px-4 py-3 mb-2">
+        <div class="d-flex align-items-center bg-white border rounded-3 px-4 py-3 mb-2 cursor-pointer" onclick="abrirModalEditarProveedor({{ prov.id }})" style="cursor:pointer;">
           <div style="width: 30%;" class="fw-semibold">{{ prov.razon_social }}</div>
           <div style="width: 20%;">{{ prov.cuit }}</div>
           <div style="width: 18%;">{{ prov.telefono }}</div>
@@ -84,4 +89,113 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal: Editar proveedor -->
+  <div class="modal fade" id="modalProveedorEditar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Editar proveedor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <form id="formEditarProveedor" method="post" action="">
+          {% csrf_token %}
+          <div class="modal-body">
+            <input type="hidden" id="proveedor_id_edit" name="proveedor_id" value="">
+            <div class="mb-3">
+              <label for="razon_social_edit" class="form-label">Razón social</label>
+              <input type="text" id="razon_social_edit" name="razon_social" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="cuit_edit" class="form-label">CUIT</label>
+              <input type="text" id="cuit_edit" name="cuit" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="telefono_edit" class="form-label">Teléfono</label>
+              <input type="text" id="telefono_edit" name="telefono" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="correo_edit" class="form-label">Correo</label>
+              <input type="email" id="correo_edit" name="correo" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="forma_pago_edit" class="form-label">Forma de pago</label>
+              <select id="forma_pago_edit" name="forma_pago" class="form-select rounded-3" required>
+                {% for value, label in proveedores.model.FORMA_PAGO_CHOICES %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0 d-flex gap-2">
+            <button type="submit" class="btn btn-dark w-100 rounded-3 py-2">Guardar cambios</button>
+            <button type="button" class="btn btn-outline-danger w-100 rounded-3 py-2" data-bs-toggle="modal" data-bs-target="#modalConfirmarEliminarProveedor">Eliminar proveedor</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmar eliminar -->
+  <div class="modal fade" id="modalConfirmarEliminarProveedor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Eliminar proveedor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1">¿Seguro que desea eliminar este proveedor?</p>
+          <small class="text-muted">Esta acción no se puede deshacer.</small>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <form id="formEliminarProveedor" method="post" action="">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger w-100 rounded-3 py-2">Eliminar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function abrirModalEditarProveedor(id) {
+      try {
+        const resp = await fetch(`/proveedores/${id}/obtener/`);
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || 'Error al obtener proveedor');
+
+        document.getElementById('proveedor_id_edit').value = data.id;
+        document.getElementById('razon_social_edit').value = data.razon_social;
+        document.getElementById('cuit_edit').value = data.cuit;
+        document.getElementById('telefono_edit').value = data.telefono;
+        document.getElementById('correo_edit').value = data.correo;
+        document.getElementById('forma_pago_edit').value = data.forma_pago;
+
+        const formEditar = document.getElementById('formEditarProveedor');
+        formEditar.action = `/proveedores/${id}/actualizar/`;
+
+        const formEliminar = document.getElementById('formEliminarProveedor');
+        formEliminar.action = `/proveedores/${id}/eliminar/`;
+
+        const modal = new bootstrap.Modal(document.getElementById('modalProveedorEditar'));
+        modal.show();
+      } catch (err) {
+        console.error(err);
+        alert('No se pudo cargar el proveedor.');
+      }
+    }
+
+    // Limpiar filtros
+    (function(){
+      const btn = document.getElementById('btnLimpiarProv');
+      const input = document.querySelector('input[name="q"]');
+      if (!btn || !input) return;
+      btn.addEventListener('click', () => {
+        input.value = '';
+        btn.closest('form').submit();
+      });
+    })();
+  </script>
+
 {% endblock %}

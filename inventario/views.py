@@ -2,13 +2,15 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User, Group
+from django.contrib.auth import update_session_auth_hash
 from django.shortcuts import render, redirect
 from django.utils import timezone
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from django.db.models import F,Case, When, Value, IntegerField, Q
 from django.db import transaction
-from .models import Articulo, MovimientoStock, Recepcion, RecepcionItem, Categoria, OrdenCompra, OrdenCompraItem, Proveedor
+from .models import Articulo, MovimientoStock, Recepcion, RecepcionItem, Categoria, OrdenCompra, OrdenCompraItem, Proveedor, UsuarioPerfil
 
 
 @login_required
@@ -600,7 +602,16 @@ def lista_proveedores(request):
     """
     Lista y crea proveedores.
     """
-    proveedores = Proveedor.objects.all().order_by("razon_social")
+    q = request.GET.get("q", "").strip()
+    proveedores_qs = Proveedor.objects.all()
+    if q:
+        proveedores_qs = proveedores_qs.filter(
+            Q(razon_social__icontains=q) |
+            Q(cuit__icontains=q) |
+            Q(correo__icontains=q) |
+            Q(telefono__icontains=q)
+        )
+    proveedores = proveedores_qs.order_by("razon_social")
 
     if request.method == "POST":
         razon_social = request.POST.get("razon_social", "").strip()
@@ -633,9 +644,187 @@ def lista_proveedores(request):
 
     contexto = {
         "proveedores": proveedores,
+        "q": q,
         "section": "proveedores",
     }
     return render(request, "inventario/lista_proveedores.html", contexto)
+
+
+@login_required
+def obtener_proveedor_ajax(request, proveedor_id):
+    try:
+        proveedor = Proveedor.objects.get(id=proveedor_id)
+        data = {
+            "id": proveedor.id,
+            "razon_social": proveedor.razon_social,
+            "cuit": proveedor.cuit,
+            "telefono": proveedor.telefono,
+            "correo": proveedor.correo,
+            "forma_pago": proveedor.forma_pago,
+        }
+        return JsonResponse(data)
+    except Proveedor.DoesNotExist:
+        return JsonResponse({"error": "Proveedor no encontrado"}, status=404)
+
+
+@login_required
+def actualizar_proveedor(request, proveedor_id):
+    if request.method != "POST":
+        return redirect("lista_proveedores")
+    try:
+        proveedor = Proveedor.objects.get(id=proveedor_id)
+    except Proveedor.DoesNotExist:
+        messages.error(request, "Proveedor no encontrado.")
+        return redirect("lista_proveedores")
+
+    razon_social = request.POST.get("razon_social", "").strip()
+    cuit = request.POST.get("cuit", "").strip()
+    telefono = request.POST.get("telefono", "").strip()
+    correo = request.POST.get("correo", "").strip()
+    forma_pago = request.POST.get("forma_pago", Proveedor.FORMA_CONTADO)
+
+    if not razon_social or not cuit or not telefono or not correo or not forma_pago:
+        messages.error(request, "Todos los campos son obligatorios.")
+        return redirect("lista_proveedores")
+
+    if forma_pago not in dict(Proveedor.FORMA_PAGO_CHOICES):
+        messages.error(request, "Forma de pago inválida.")
+        return redirect("lista_proveedores")
+
+    if Proveedor.objects.filter(cuit=cuit).exclude(id=proveedor_id).exists():
+        messages.error(request, "Ya existe un proveedor con ese CUIT.")
+        return redirect("lista_proveedores")
+
+    proveedor.razon_social = razon_social
+    proveedor.cuit = cuit
+    proveedor.telefono = telefono
+    proveedor.correo = correo
+    proveedor.forma_pago = forma_pago
+    proveedor.save()
+
+    messages.success(request, f"Proveedor '{razon_social}' actualizado.")
+    return redirect("lista_proveedores")
+
+
+@login_required
+def eliminar_proveedor(request, proveedor_id):
+    if request.method != "POST":
+        return redirect("lista_proveedores")
+    try:
+        proveedor = Proveedor.objects.get(id=proveedor_id)
+    except Proveedor.DoesNotExist:
+        messages.error(request, "Proveedor no encontrado.")
+        return redirect("lista_proveedores")
+
+    proveedor.delete()
+    messages.success(request, "Proveedor eliminado.")
+    return redirect("lista_proveedores")
+
+
+@login_required
+def lista_usuarios(request):
+    """
+    Lista y crea usuarios básicos asignándolos a un rol (grupo).
+    El nombre de usuario se genera como primera letra del nombre + apellido.
+    """
+    ROLES = {
+        "ADMINISTRACION": "Administración",
+        "COMPRAS": "Compras",
+        "OPERARIO": "Operario",
+    }
+
+    q = request.GET.get("q", "").strip()
+    usuarios_qs = User.objects.all()
+    if q:
+        usuarios_qs = usuarios_qs.filter(
+            Q(username__icontains=q) |
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(email__icontains=q)
+        )
+
+    usuarios = usuarios_qs.order_by("username")
+
+    if request.method == "POST":
+        nombre = request.POST.get("nombre", "").strip()
+        apellido = request.POST.get("apellido", "").strip()
+        dni = request.POST.get("dni", "").strip()
+        email = request.POST.get("email", "").strip()
+        rol_key = request.POST.get("rol", "").strip()
+
+        if not nombre or not apellido or not dni or not email or rol_key not in ROLES:
+            messages.error(request, "Todos los campos son obligatorios y el rol debe ser válido.")
+            return redirect("lista_usuarios")
+
+        base_username = (nombre[:1] + apellido).lower().replace(" ", "")
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            counter += 1
+            username = f"{base_username}{counter}"
+
+        try:
+            user = User.objects.create_user(
+                username=username,
+                first_name=nombre,
+                last_name=apellido,
+                email=email,
+                password=dni,  # contraseña inicial sencilla; idealmente forzar cambio
+            )
+
+            group, _ = Group.objects.get_or_create(name=ROLES[rol_key])
+            user.groups.add(group)
+
+            UsuarioPerfil.objects.create(user=user, must_change_password=True)
+
+            messages.success(request, f"Usuario '{username}' creado con rol {ROLES[rol_key]}. Contraseña inicial: DNI.")
+        except Exception as e:
+            messages.error(request, f"No se pudo crear el usuario: {e}")
+
+        return redirect("lista_usuarios")
+
+    contexto = {
+        "usuarios": usuarios,
+        "roles": ROLES,
+        "q": q,
+        "section": "usuarios",
+    }
+    return render(request, "inventario/lista_usuarios.html", contexto)
+
+
+@login_required
+def forzar_cambio_clave(request):
+    """
+    Vista simple para obligar cambio de contraseña sin pedir la anterior.
+    """
+    if request.method == "POST":
+        pw1 = request.POST.get("password1", "")
+        pw2 = request.POST.get("password2", "")
+
+        if not pw1 or not pw2:
+            messages.error(request, "Debes completar ambos campos.")
+            return redirect("forzar_cambio_clave")
+        if pw1 != pw2:
+            messages.error(request, "Las contraseñas no coinciden.")
+            return redirect("forzar_cambio_clave")
+        if len(pw1) < 6:
+            messages.error(request, "La contraseña debe tener al menos 6 caracteres.")
+            return redirect("forzar_cambio_clave")
+
+        user = request.user
+        user.set_password(pw1)
+        user.save()
+
+        perfil, _ = UsuarioPerfil.objects.get_or_create(user=user)
+        perfil.must_change_password = False
+        perfil.save()
+
+        update_session_auth_hash(request, user)  # mantener sesión
+        messages.success(request, "Contraseña actualizada.")
+        return redirect("dashboard")
+
+    contexto = {"section": "usuarios"}
+    return render(request, "inventario/forzar_cambio_clave.html", contexto)
 
 
 @login_required

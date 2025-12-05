@@ -331,6 +331,28 @@
     </div>
   </div>
 
+  <!-- Modal: Confirmar eliminar artículo -->
+  <div class="modal fade" id="modalEliminarArticulo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Eliminar artículo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1">¿Estás seguro de eliminar este artículo?</p>
+          <small class="text-muted">Esta acción no se puede deshacer.</small>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <form id="formEliminarArticulo" method="post" action="">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger w-100 rounded-3 py-2">Eliminar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Nueva categoría -->
   <div class="modal fade" id="modalNuevaCategoria" tabindex="-1" aria-labelledby="modalNuevaCategoriaLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -444,7 +466,7 @@
           </div>
           <div class="modal-footer border-0 pt-3 border-top gap-2">
             <button type="submit" class="btn btn-dark flex-grow-1 rounded-3 py-2">Guardar cambios</button>
-            <a id="btnEliminarArticulo" href="#" class="btn btn-danger flex-grow-1 rounded-3 py-2" onclick="confirmarEliminar(event)">Eliminar artículo</a>
+            <button id="btnEliminarArticulo" type="button" class="btn btn-danger flex-grow-1 rounded-3 py-2">Eliminar artículo</button>
           </div>
         </form>
       </div>
@@ -506,8 +528,11 @@
         document.getElementById('edit_ubicacion').value = data.ubicacion;
         document.getElementById('edit_unidad_medida').value = data.unidad_medida;
         
-        // Configurar botón eliminar
-        document.getElementById('btnEliminarArticulo').href = `/insumos/${articuloId}/eliminar/`;
+        // Configurar botón eliminar para usar modal de confirmación
+        const btnEliminar = document.getElementById('btnEliminarArticulo');
+        if (btnEliminar) {
+          btnEliminar.dataset.deleteUrl = `/insumos/${articuloId}/eliminar/`;
+        }
         
         // Abrir modal
         const modal = new bootstrap.Modal(document.getElementById('modalEditarInsumo'));
@@ -518,11 +543,6 @@
       }
     }
 
-    function confirmarEliminar(event) {
-      if (!confirm('¿Está seguro de que desea eliminar este artículo?')) {
-        event.preventDefault();
-      }
-    }
   </script>
 
   <script>
@@ -564,6 +584,51 @@
         });
       }
     })();
+  </script>
+
+  <!-- Modal: Confirmar eliminar art?culo -->
+  <div class="modal fade" id="modalEliminarArticulo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Eliminar art?culo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-1">?Est?s seguro de eliminar este art?culo?</p>
+          <small class="text-muted">Esta acci?n no se puede deshacer.</small>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <form id="formEliminarArticulo" method="post" action="">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger w-100 rounded-3 py-2">Eliminar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Vincular botón eliminar con modal de confirmación (ejecutar al cargar la página)
+    document.addEventListener('DOMContentLoaded', function() {
+      const btnEliminar = document.getElementById('btnEliminarArticulo');
+      const formEliminar = document.getElementById('formEliminarArticulo');
+      const modalEliminarEl = document.getElementById('modalEliminarArticulo');
+      if (!btnEliminar || !formEliminar || !modalEliminarEl) return;
+
+      const modalEliminar = new bootstrap.Modal(modalEliminarEl);
+
+      btnEliminar.addEventListener('click', function(){
+        const url = this.dataset.deleteUrl;
+        if (!url) return;
+        formEliminar.action = url;
+        const modalEditar = bootstrap.Modal.getInstance(document.getElementById('modalEditarInsumo'));
+        if (modalEditar) {
+          modalEditar.hide();
+        }
+        modalEliminar.show();
+      });
+    });
   </script>
 
 {% endblock %}

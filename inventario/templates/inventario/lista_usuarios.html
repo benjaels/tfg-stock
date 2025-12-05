@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Usuarios{% endblock %}
+
+{% block content %}
+  <h1 class="h3 fw-bold mb-3">Usuarios</h1>
+
+  <section class="bg-white rounded-4 shadow-sm p-4">
+    <div class="mb-3 d-flex flex-column flex-md-row gap-2 justify-content-between align-items-md-center">
+      <form method="get" class="d-flex gap-2 flex-grow-1">
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Buscar por nombre, usuario o email">
+        <button type="submit" class="btn btn-dark">Buscar</button>
+        <button type="button" id="btnLimpiarUsuarios" class="btn btn-outline-secondary">Limpiar</button>
+      </form>
+      <button 
+        class="btn btn-dark rounded-3"
+        data-bs-toggle="modal"
+        data-bs-target="#modalNuevoUsuario"
+      >
+        Nuevo usuario
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <div class="rounded-3 bg-secondary bg-opacity-10 px-4 py-3 fw-semibold d-flex mb-2" style="align-items: center;">
+        <div style="width: 20%;">Nombre</div>
+        <div style="width: 20%;">Apellido</div>
+        <div style="width: 18%;">Usuario</div>
+        <div style="width: 12%;">Rol</div>
+        <div style="width: 20%;">Correo</div>
+        <div style="width: 10%;" class="text-end">DNI</div>
+      </div>
+
+      {% for user in usuarios %}
+        <div class="d-flex align-items-center bg-white border rounded-3 px-4 py-3 mb-2">
+          <div style="width: 20%;" class="fw-semibold">{{ user.first_name }}</div>
+          <div style="width: 20%;">{{ user.last_name }}</div>
+          <div style="width: 18%;">{{ user.username }}</div>
+          <div style="width: 12%;">
+            {% with user.groups.all|first as g %}
+              {{ g.name|default:"Sin rol" }}
+            {% endwith %}
+          </div>
+          <div style="width: 20%;">{{ user.email }}</div>
+          <div style="width: 10%;" class="text-end">—</div>
+        </div>
+      {% empty %}
+        <div class="text-center text-muted py-4">
+          No hay usuarios registrados.
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Modal: Nuevo usuario -->
+  <div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Nuevo usuario</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <form method="post" action="{% url 'lista_usuarios' %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="nombre" class="form-label">Nombre</label>
+              <input type="text" id="nombre" name="nombre" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="apellido" class="form-label">Apellido</label>
+              <input type="text" id="apellido" name="apellido" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="dni" class="form-label">DNI</label>
+              <input type="text" id="dni" name="dni" class="form-control rounded-3" required>
+              <div class="form-text">Se usará como contraseña inicial.</div>
+            </div>
+            <div class="mb-3">
+              <label for="email" class="form-label">Correo</label>
+              <input type="email" id="email" name="email" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="rol" class="form-label">Rol</label>
+              <select id="rol" name="rol" class="form-select rounded-3" required>
+                {% for key,label in roles.items %}
+                  <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Usuario sugerido</label>
+              <input type="text" id="username_preview" class="form-control rounded-3" readonly value="Se genera automáticamente">
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="submit" class="btn btn-dark w-100 rounded-3 py-2">Crear usuario</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Previsualizar username generado: primera letra del nombre + apellido en minúsculas
+    (function(){
+      const nombre = document.getElementById('nombre');
+      const apellido = document.getElementById('apellido');
+      const preview = document.getElementById('username_preview');
+      if (!nombre || !apellido || !preview) return;
+
+      const actualizar = () => {
+        const n = (nombre.value || '').trim();
+        const a = (apellido.value || '').trim();
+        if (!n || !a) {
+          preview.value = 'Se genera automáticamente';
+          return;
+        }
+        const user = (n[0] + a).toLowerCase().replace(/\\s+/g, '');
+        preview.value = user;
+      };
+      nombre.addEventListener('input', actualizar);
+      apellido.addEventListener('input', actualizar);
+    })();
+
+    // Limpiar filtros
+    (function(){
+      const btn = document.getElementById('btnLimpiarUsuarios');
+      const input = document.querySelector('input[name="q"]');
+      if (!btn || !input) return;
+      btn.addEventListener('click', () => {
+        input.value = '';
+        btn.closest('form').submit();
+      });
+    })();
+  </script>
+{% endblock %}

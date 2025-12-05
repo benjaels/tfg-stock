@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.db.models import Max
+from django.contrib.auth import get_user_model
 
 
 class Categoria(models.Model):
@@ -47,6 +48,17 @@ class Proveedor(models.Model):
 
     def __str__(self):
         return f"{self.razon_social} ({self.cuit})"
+
+
+class UsuarioPerfil(models.Model):
+    """
+    Datos extra para usuarios internos.
+    """
+    user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE, related_name="perfil")
+    must_change_password = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Perfil de {self.user.username}"
 
 
 class Articulo(models.Model):
