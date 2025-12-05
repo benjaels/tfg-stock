@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40">
+  <!-- Marco redondeado -->
+  <rect x="8" y="8" width="84" height="84" rx="12" fill="none" stroke="currentColor" stroke-width="3"/>
+  
+  <!-- Barra 1 (pequeña) -->
+  <rect x="20" y="60" width="12" height="25" fill="currentColor"/>
+  
+  <!-- Barra 2 (mediana) -->
+  <rect x="44" y="45" width="12" height="40" fill="currentColor"/>
+  
+  <!-- Barra 3 (grande) -->
+  <rect x="68" y="30" width="12" height="55" fill="currentColor"/>
+</svg>

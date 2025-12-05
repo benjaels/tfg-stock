@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Ordenes de compra{% endblock %}
+
+{% block content %}
+  <h1 class="h3 fw-bold mb-3">Ordenes de compra</h1>
+
+  <section class="bg-white rounded-4 shadow-sm p-4">
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <h5 class="fw-bold mb-3">Nueva orden</h5>
+        <form method="post" class="bg-light rounded-3 p-3">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="proveedor" class="form-label">Proveedor</label>
+            <select id="proveedor" name="proveedor" class="form-select rounded-3" required>
+              <option value="" selected disabled>Seleccione un proveedor</option>
+              {% for prov in proveedores %}
+                <option value="{{ prov.id }}">{{ prov.razon_social }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="observaciones" class="form-label">Notas / observaciones</label>
+            <textarea id="observaciones" name="observaciones" rows="2" class="form-control rounded-3" placeholder="Opcional"></textarea>
+          </div>
+
+          <div class="mb-2 d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Articulos a reponer</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnAgregarItem">Agregar item</button>
+          </div>
+
+          <div id="itemsContainer" class="d-flex flex-column gap-2">
+            <div class="d-flex gap-2 item-row">
+              <div class="flex-grow-1">
+                <input 
+                  type="text" 
+                  name="item_articulo_label" 
+                  class="form-control" 
+                  list="articulosDatalist" 
+                  placeholder="Codigo o nombre" 
+                  oninput="sincronizarArticulo(this)" 
+                  required
+                >
+                <input type="hidden" name="item_articulo">
+              </div>
+              <input type="number" name="item_cantidad" class="form-control" min="0.01" step="0.01" placeholder="Cantidad" required>
+              <button type="button" class="btn btn-outline-danger" onclick="this.closest('.item-row').remove()">×</button>
+            </div>
+          </div>
+
+          <div class="mt-3 d-grid">
+            <button type="submit" class="btn btn-dark rounded-3 py-2">Guardar orden</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0">Ordenes registradas</h5>
+          <form method="get" class="d-flex gap-2 align-items-center">
+            <select name="proveedor" class="form-select form-select-sm rounded-3">
+              <option value="">Todos los proveedores</option>
+              {% for prov in proveedores %}
+                <option value="{{ prov.id }}" {% if proveedor_sel == prov.id|stringformat:"s" %}selected{% endif %}>
+                  {{ prov.razon_social }}
+                </option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-outline-secondary btn-sm rounded-3">Filtrar</button>
+          </form>
+        </div>
+        <div class="list-group" style="max-height: 520px; overflow-y: auto;">
+          {% for oc in ordenes %}
+            <div class="list-group-item rounded-3 mb-2 {% if oc.estado == 'RECIBIDA' %}bg-light{% endif %}">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <div class="fw-bold">OC #{{ oc.numero }} - {{ oc.proveedor.razon_social|default:"Sin proveedor" }}</div>
+                  <small class="text-muted">
+                    Creada: {{ oc.fecha_creacion|date:"d/m/Y H:i" }} |
+                    Estado: 
+                    {% if oc.estado == "PENDIENTE" %}
+                      <span class="badge bg-warning text-dark">Pendiente de recepcion</span>
+                    {% else %}
+                      <span class="badge bg-success">Recibida</span>
+                    {% endif %}
+                    {% if oc.fecha_recepcion %} | Recibida: {{ oc.fecha_recepcion|date:"d/m/Y H:i" }}{% endif %}
+                  </small>
+                </div>
+                <button 
+                  class="btn btn-sm {% if oc.estado == 'RECIBIDA' %}btn-outline-secondary{% else %}btn-outline-primary{% endif %}" 
+                  type="button" 
+                  data-bs-toggle="collapse" 
+                  data-bs-target="#oc-{{ oc.id }}" 
+                  aria-expanded="false" 
+                  aria-controls="oc-{{ oc.id }}"
+                >
+                  Ver orden
+                </button>
+              </div>
+              <div class="collapse mt-3" id="oc-{{ oc.id }}">
+                <div class="border rounded-3 p-3 bg-white">
+                  <div class="mb-2 fw-semibold">Items</div>
+                  {% for item in oc.items.all %}
+                    <div class="d-flex justify-content-between small py-1">
+                      <span>{{ item.articulo.codigo }} - {{ item.articulo.descripcion }}</span>
+                      <span class="fw-semibold">{{ item.cantidad }} {{ item.articulo.unidad_medida }}</span>
+                    </div>
+                  {% empty %}
+                    <div class="text-muted small">Sin items</div>
+                  {% endfor %}
+                  {% if oc.observaciones %}
+                    <div class="mt-2 text-muted small">Nota: {{ oc.observaciones }}</div>
+                  {% endif %}
+                  <div class="d-flex gap-2 mt-3">
+                    {% if oc.estado == "PENDIENTE" %}
+                      <form method="post" action="{% url 'recibir_orden_compra' oc.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success btn-sm">Confirmar recepcion</button>
+                      </form>
+                      <form method="post" action="{% url 'eliminar_orden_compra' oc.id %}" onsubmit="return confirm('Eliminar la orden #{{ oc.numero }}');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar orden</button>
+                      </form>
+                    {% else %}
+                      <span class="badge bg-success">Recibida</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-center text-muted py-4">
+              No hay ordenes registradas.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <datalist id="articulosDatalist">
+    {% for art in articulos %}
+      <option data-id="{{ art.id }}" value="{{ art.codigo }} - {{ art.descripcion }}"></option>
+    {% endfor %}
+  </datalist>
+
+  <script>
+    (function(){
+      const container = document.getElementById('itemsContainer');
+      const addBtn = document.getElementById('btnAgregarItem');
+      if (!container || !addBtn) return;
+
+      function sincronizarArticulo(inputEl) {
+        const hidden = inputEl.parentElement.querySelector('input[type="hidden"][name="item_articulo"]');
+        const val = inputEl.value;
+        const options = document.querySelectorAll('#articulosDatalist option');
+        let found = "";
+        options.forEach(opt => {
+          if (opt.value === val) {
+            found = opt.dataset.id || "";
+          }
+        });
+        hidden.value = found;
+      }
+      window.sincronizarArticulo = sincronizarArticulo;
+
+      function crearFila() {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'd-flex gap-2 item-row';
+        wrapper.innerHTML = `
+          <div class="flex-grow-1">
+            <input 
+              type="text" 
+              name="item_articulo_label" 
+              class="form-control" 
+              list="articulosDatalist" 
+              placeholder="Codigo o nombre" 
+              oninput="sincronizarArticulo(this)" 
+              required
+            >
+            <input type="hidden" name="item_articulo">
+          </div>
+          <input type="number" name="item_cantidad" class="form-control" min="0.01" step="0.01" placeholder="Cantidad" required>
+          <button type="button" class="btn btn-outline-danger" aria-label="Eliminar item">×</button>
+        `;
+        wrapper.querySelector('button').addEventListener('click', () => wrapper.remove());
+        return wrapper;
+      }
+
+      addBtn.addEventListener('click', () => {
+        container.appendChild(crearFila());
+      });
+    })();
+  </script>
+{% endblock %}

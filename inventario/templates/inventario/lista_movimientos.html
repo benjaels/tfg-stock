@@ -37,7 +37,7 @@
         <div style="width: 16%;">Fecha</div>
         <div style="width: 10%;">Tipo</div>
         <div class="text-end" style="width: 12%;">Cantidad</div>
-        <div style="width: 12%;">Usuario</div>
+        <div class="text-end" style="width: 12%;">Usuario</div>
       </div>
 
       <!-- Lista de últimos movimientos -->
@@ -59,7 +59,7 @@
             <div style="width: 12%;" class="text-end">
               {{ mov.cantidad }}
             </div>
-            <div style="width: 12%;">
+            <div style="width: 12%;" class="text-end">
               {{ mov.usuario }}
             </div>
           </div>
@@ -174,10 +174,9 @@
               <label for="egresoMotivo" class="form-label fw-semibold">Motivo</label>
               <select class="form-select rounded-3" id="egresoMotivo" name="observaciones" required>
                 <option value="">Seleccionar motivo...</option>
-                <option value="Venta">Venta</option>
+                <option value="Producción">Producción</option>
                 <option value="Devolución">Devolución</option>
                 <option value="Pérdida">Pérdida</option>
-                <option value="Transferencia">Transferencia</option>
                 <option value="Otro">Otro</option>
               </select>
             </div>
@@ -223,7 +222,7 @@
 
             <div class="mb-3">
               <label for="ajusteCantidad" class="form-label fw-semibold">Cantidad (positiva o negativa)</label>
-              <input type="number" class="form-control rounded-3" id="ajusteCantidad" name="cantidad" step="0.01" required>
+              <input type="number" class="form-control rounded-3" id="ajusteCantidad" name="cantidad" step="1" required>
             </div>
 
             <div class="mb-3">

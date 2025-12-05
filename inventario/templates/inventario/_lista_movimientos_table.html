@@ -6,8 +6,8 @@
         <th>Artículo</th>
         <th>Tipo</th>
         <th class="text-end">Cantidad</th>
-        <th>Usuario</th>
         <th>Observaciones</th>
+        <th class="text-end">Usuario</th>
       </tr>
     </thead>
     <tbody>
@@ -23,8 +23,8 @@
             {{ mov.get_tipo_display }}
           </td>
           <td class="text-end">{{ mov.cantidad }}</td>
-          <td>{{ mov.usuario }}</td>
           <td>{{ mov.observaciones }}</td>
+          <td class="text-end">{{ mov.usuario }}</td>
         </tr>
       {% empty %}
         <tr>

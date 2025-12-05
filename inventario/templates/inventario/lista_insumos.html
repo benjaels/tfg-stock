@@ -24,63 +24,61 @@
         </div>
         <div class="col-md-6 d-flex gap-2">
           <select id="filtroCategoria" name="categoria" class="form-select form-select-lg rounded-3">
-            <option value="">Categoría</option>
+            <option value="" disabled selected>Categoría</option>
             {% for cat in categorias %}
               <option value="{{ cat.id }}" {% if categoria_selected == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.nombre }}</option>
             {% endfor %}
           </select>
           <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalNuevaCategoria" aria-label="Agregar categoría">+</button>
+          <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalGestionarCategorias" aria-label="Eliminar categoría">−</button>
         </div>
       </div>
-      <div class="mt-3 d-flex gap-2">
-        <button type="submit" class="btn btn-dark btn-lg rounded-3 flex-grow-1">Buscar</button>
+      <div class="mt-3 d-flex gap-2 align-items-stretch">
         <button type="button" id="btnLimpiar" class="btn btn-outline-secondary btn-lg rounded-3 flex-grow-1">Limpiar filtros</button>
-      </div>
-      </form>
-      <div class="mt-3">
         <button 
           type="button" 
-          class="btn btn-light btn-lg rounded-3 w-100" 
-          style="color: #999;"
+          class="btn btn-dark btn-lg rounded-3 flex-grow-1" 
+          style="color: #f8f9fa;"
           data-bs-toggle="modal"
           data-bs-target="#modalNuevoInsumo"
         >
           Nuevo insumo
         </button>
       </div>
+      </form>
     </div>
 
     <!-- Tabla de artículos -->
     <div class="table-responsive">
-      <div class="rounded-3 bg-secondary bg-opacity-10 px-4 py-3 fw-semibold d-flex mb-2" style="align-items: center;">
+      <div class="rounded-3 bg-secondary bg-opacity-10 px-4 py-3 fw-semibold d-flex mb-2 gap-3" style="align-items: center;">
         <div style="width: 12%;">Código <i class="bi bi-arrow-down-up" style="font-size: 0.8rem; margin-left: 0.5rem;"></i></div>
-        <div style="width: 25%;">Nombre</div>
-        <div style="width: 15%;">Unidad</div>
-        <div class="text-end" style="width: 12%;">Stock</div>
-        <div class="text-end" style="width: 12%;">Mínimo</div>
-        <div style="width: 24%;">Ubicación</div>
+        <div style="width: 32%;">Nombre</div>
+        <div style="width: 13%;">Unidad</div>
+        <div class="text-end" style="width: 10%;">Stock</div>
+        <div class="text-end" style="width: 10%;">Mínimo</div>
+        <div style="width: 13%; padding-left: 1rem;">Ubicación</div>
       </div>
 
       <!-- Lista de artículos -->
       <div id="articulosList">
         {% for art in articulos %}
-          <div class="d-flex align-items-center bg-white border rounded-3 px-4 py-3 mb-2">
+          <div class="d-flex align-items-center bg-white border rounded-3 px-4 py-3 mb-2 cursor-pointer gap-3" style="cursor: pointer;" onclick="abrirModalEditar({{ art.id }})">
             <div style="width: 12%;" class="fw-semibold">
               {{ art.codigo }}
             </div>
-            <div style="width: 25%;">
+            <div style="width: 32%;">
               {{ art.descripcion }}
             </div>
-            <div style="width: 15%;">
+            <div style="width: 13%;">
               {{ art.unidad_medida }}
             </div>
-            <div class="text-end" style="width: 12%;">
+            <div class="text-end" style="width: 10%;">
               {{ art.stock_actual }}
             </div>
-            <div class="text-end" style="width: 12%;">
+            <div class="text-end" style="width: 10%;">
               {{ art.stock_minimo }}
             </div>
-            <div style="width: 24%;">
+            <div style="width: 13%; padding-left: 1rem;">
               {{ art.ubicacion }}
             </div>
           </div>
@@ -161,41 +159,77 @@
 
       form.addEventListener('submit', async function(e){
         e.preventDefault();
+        
+        const nombre = document.getElementById('cat_nombre').value.trim();
+        const prefijo = document.getElementById('cat_prefijo').value.trim();
+        const descripcion = document.getElementById('cat_descripcion').value.trim();
+        
+        console.log('Enviando categoría:', {nombre, prefijo, descripcion});
+        
         const url = form.action;
-        const data = new FormData(form);
+        const formData = new FormData();
+        formData.append('nombre', nombre);
+        formData.append('prefijo', prefijo);
+        formData.append('descripcion', descripcion);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
 
-        const resp = await fetch(url, {
-          method: 'POST',
-          headers: {'X-Requested-With':'XMLHttpRequest'},
-          body: data
-        });
-
-        if (resp.ok) {
-          const json = await resp.json();
-          // Añadir la nueva opción a ambos selects
-          const selects = [document.getElementById('filtroCategoria'), document.getElementById('categoria')];
-          selects.forEach(s => {
-            if (!s) return;
-            const opt = document.createElement('option');
-            opt.value = json.id;
-            opt.textContent = json.nombre;
-            s.appendChild(opt);
+        try {
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: {'X-Requested-With':'XMLHttpRequest'},
+            body: formData
           });
 
-          // Seleccionar la nueva categoría en el modal de insumo
-          const catSelect = document.getElementById('categoria');
-          if (catSelect) catSelect.value = json.id;
+          console.log('Response status:', resp.status);
+          console.log('Response ok:', resp.ok);
+          
+          const text = await resp.text();
+          console.log('Response text:', text);
+          
+          try {
+            const json = JSON.parse(text);
+            console.log('Response JSON:', json);
+            
+            if (resp.ok && json.id) {
+              // Éxito - agregar a los selects
+              const selects = [
+                document.getElementById('filtroCategoria'), 
+                document.getElementById('categoria'),
+                document.getElementById('edit_categoria')
+              ];
+              
+              selects.forEach(s => {
+                if (!s) return;
+                const opt = document.createElement('option');
+                opt.value = json.id;
+                opt.textContent = json.nombre;
+                opt.setAttribute('data-prefijo', json.prefijo || '');
+                s.appendChild(opt);
+              });
 
-          // Cerrar modal
-          const modalEl = document.getElementById('modalNuevaCategoria');
-          const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-          modal.hide();
+              const catSelect = document.getElementById('categoria');
+              if (catSelect) {
+                catSelect.value = json.id;
+                catSelect.dispatchEvent(new Event('change'));
+              }
 
-          // Limpiar formulario
-          form.reset();
-        } else {
-          const err = await resp.json().catch(()=>({error:'Error'}));
-          alert(err.error || 'Error al crear categoría');
+              const modalEl = document.getElementById('modalNuevaCategoria');
+              const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+              modal.hide();
+              form.reset();
+              
+              alert(`Categoría '${json.nombre}' creada exitosamente`);
+            } else {
+              alert(json.error || 'Error al crear categoría');
+            }
+          } catch (parseError) {
+            console.error('Error parsing JSON:', parseError);
+            console.error('Text was:', text);
+            alert('Error en la respuesta del servidor');
+          }
+        } catch (error) {
+          console.error('Error en fetch:', error);
+          alert('Error al crear categoría: ' + error.message);
         }
       });
     })();
@@ -212,6 +246,20 @@
         <form method="post" action="{% url 'crear_articulo' %}">
           {% csrf_token %}
           <div class="modal-body">
+            <div class="mb-3">
+              <label for="categoria" class="form-label">Categoría</label>
+              <select 
+                id="categoria" 
+                name="categoria" 
+                class="form-select rounded-3"
+                data-prefijos='{%for cat in categorias %}{"id":{{ cat.id }},"prefijo":"{{ cat.prefijo }}"}{% if not forloop.last %},{%endif%}{%endfor%}'
+              >
+                {% for cat in categorias %}
+                  <option value="{{ cat.id }}" data-prefijo="{{ cat.prefijo }}">{{ cat.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
             <div class="mb-3">
               <label for="codigo" class="form-label">Código</label>
               <input 
@@ -250,16 +298,17 @@
             </div>
 
             <div class="mb-3">
-              <label for="categoria" class="form-label">Categoría</label>
+              <label for="unidad_medida" class="form-label">Unidad de medida</label>
               <select 
-                id="categoria" 
-                name="categoria" 
+                id="unidad_medida" 
+                name="unidad_medida" 
                 class="form-select rounded-3"
+                required
               >
-                <option value="">-- Seleccionar categoría --</option>
-                {% for cat in categorias %}
-                  <option value="{{ cat.id }}">{{ cat.nombre }}</option>
-                {% endfor %}
+                <option value="Unidad" selected>Unidad</option>
+                <option value="Kg">Kilogramos</option>
+                <option value="Metro">Metros</option>
+                <option value="L">Litros</option>
               </select>
             </div>
 
@@ -298,6 +347,10 @@
               <input type="text" id="cat_nombre" name="nombre" class="form-control rounded-3" required>
             </div>
             <div class="mb-3">
+              <label for="cat_prefijo" class="form-label">Prefijo para códigos</label>
+              <input type="text" id="cat_prefijo" name="prefijo" class="form-control rounded-3" placeholder="Ej: CH-, P-, C-" maxlength="10">
+            </div>
+            <div class="mb-3">
               <label for="cat_descripcion" class="form-label">Descripción</label>
               <input type="text" id="cat_descripcion" name="descripcion" class="form-control rounded-3">
             </div>
@@ -309,5 +362,208 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal: Editar artículo -->
+  <div class="modal fade" id="modalEditarInsumo" tabindex="-1" aria-labelledby="modalEditarInsumoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="modalEditarInsumoLabel">Editar Insumo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <form id="formEditarInsumo" method="post" action="{% url 'actualizar_articulo' %}">
+          {% csrf_token %}
+          <input type="hidden" id="articulo_id" name="articulo_id" value="">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="edit_codigo" class="form-label">Código</label>
+              <input 
+                type="text" 
+                id="edit_codigo" 
+                name="codigo" 
+                class="form-control rounded-3" 
+                required
+              >
+            </div>
+
+            <div class="mb-3">
+              <label for="edit_nombre" class="form-label">Nombre</label>
+              <input 
+                type="text" 
+                id="edit_nombre" 
+                name="descripcion" 
+                class="form-control rounded-3" 
+                required
+              >
+            </div>
+
+            <div class="mb-3">
+              <label for="edit_stock_minimo" class="form-label">Stock mínimo</label>
+              <input 
+                type="number" 
+                id="edit_stock_minimo" 
+                name="stock_minimo" 
+                class="form-control rounded-3" 
+                step="0.01"
+                required
+              >
+            </div>
+
+            <div class="mb-3">
+              <label for="edit_categoria" class="form-label">Categoría</label>
+              <select 
+                id="edit_categoria" 
+                name="categoria" 
+                class="form-select rounded-3"
+              >
+                {% for cat in categorias %}
+                  <option value="{{ cat.id }}" data-prefijo="{{ cat.prefijo }}">{{ cat.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label for="edit_ubicacion" class="form-label">Ubicación</label>
+              <input 
+                type="text" 
+                id="edit_ubicacion" 
+                name="ubicacion" 
+                class="form-control rounded-3"
+              >
+            </div>
+
+            <div class="mb-3">
+              <label for="edit_unidad_medida" class="form-label">Unidad de medida</label>
+              <input 
+                type="text" 
+                id="edit_unidad_medida" 
+                name="unidad_medida" 
+                class="form-control rounded-3"
+              >
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-3 border-top gap-2">
+            <button type="submit" class="btn btn-dark flex-grow-1 rounded-3 py-2">Guardar cambios</button>
+            <a id="btnEliminarArticulo" href="#" class="btn btn-danger flex-grow-1 rounded-3 py-2" onclick="confirmarEliminar(event)">Eliminar artículo</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gestionar categorías -->
+  <div class="modal fade" id="modalGestionarCategorias" tabindex="-1" aria-labelledby="modalGestionarCategoriasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="modalGestionarCategoriasLabel">Gestionar Categorías</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          {% if categorias %}
+            <div class="list-group">
+              {% for cat in categorias %}
+                <div class="list-group-item d-flex justify-content-between align-items-center rounded-3 mb-2">
+                  <div>
+                    <div class="fw-semibold">{{ cat.nombre }}</div>
+                    <small class="text-muted">
+                      Prefijo: <strong>{{ cat.prefijo|default:"Sin prefijo" }}</strong>
+                      {% if cat.descripcion %}<br>{{ cat.descripcion }}{% endif %}
+                    </small>
+                  </div>
+                  <a 
+                    href="{% url 'eliminar_categoria' cat.id %}" 
+                    class="btn btn-sm btn-danger rounded-2"
+                    onclick="return confirm('¿Está seguro de eliminar la categoría {{ cat.nombre }}? Los artículos activos impedirán la eliminación.');"
+                  >
+                    Eliminar
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center text-muted py-3">
+              No hay categorías registradas.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function abrirModalEditar(articuloId) {
+      try {
+        const response = await fetch(`/insumos/${articuloId}/obtener/`);
+        const data = await response.json();
+        
+        // Rellenar campos del modal
+        document.getElementById('articulo_id').value = data.id;
+        document.getElementById('edit_codigo').value = data.codigo;
+        document.getElementById('edit_nombre').value = data.descripcion;
+        document.getElementById('edit_stock_minimo').value = data.stock_minimo;
+        document.getElementById('edit_categoria').value = data.categoria_id || '';
+        document.getElementById('edit_ubicacion').value = data.ubicacion;
+        document.getElementById('edit_unidad_medida').value = data.unidad_medida;
+        
+        // Configurar botón eliminar
+        document.getElementById('btnEliminarArticulo').href = `/insumos/${articuloId}/eliminar/`;
+        
+        // Abrir modal
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarInsumo'));
+        modal.show();
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cargar los datos del artículo');
+      }
+    }
+
+    function confirmarEliminar(event) {
+      if (!confirm('¿Está seguro de que desea eliminar este artículo?')) {
+        event.preventDefault();
+      }
+    }
+  </script>
+
+  <script>
+    // Autocompletar código basado en categoría seleccionada
+    (function(){
+      const categoriaSelect = document.getElementById('categoria');
+      const codigoInput = document.getElementById('codigo');
+      const editCategoria = document.getElementById('edit_categoria');
+      const editCodigo = document.getElementById('edit_codigo');
+
+      if (!categoriaSelect || !codigoInput) return;
+
+      // Para modal de nuevo insumo
+      categoriaSelect.addEventListener('change', function(){
+        const selectedOption = this.options[this.selectedIndex];
+        const prefijo = selectedOption.getAttribute('data-prefijo') || '';
+        
+        if (prefijo) {
+          codigoInput.placeholder = `${prefijo}001`;
+          codigoInput.value = prefijo; // Iniciar con el prefijo
+        } else {
+          codigoInput.placeholder = 'Rellenar';
+          codigoInput.value = '';
+        }
+        codigoInput.focus();
+      });
+
+      // Para modal de edición
+      if (editCategoria && editCodigo) {
+        editCategoria.addEventListener('change', function(){
+          const selectedOption = this.options[this.selectedIndex];
+          const prefijo = selectedOption.getAttribute('data-prefijo') || '';
+          
+          if (prefijo) {
+            editCodigo.placeholder = `${prefijo}001`;
+          } else {
+            editCodigo.placeholder = 'Rellenar';
+          }
+        });
+      }
+    })();
+  </script>
 
 {% endblock %}

@@ -20,11 +20,24 @@
 
     <!-- BARRA SUPERIOR FIJA SIN DESPLEGABLE -->
     <header class="bg-white border-bottom">
-      <div class="container-fluid d-flex justify-content-between align-items-center py-2">
+      <div class="container-fluid d-flex justify-content-between align-items-center py-2 px-5">
 
         <!-- Logo / texto izquierda -->
-        <div class="fw-semibold">
-          TFG · Stock
+        <div class="d-flex align-items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40" style="color: #333;">
+            <!-- Marco redondeado -->
+            <rect x="8" y="8" width="84" height="84" rx="12" fill="none" stroke="currentColor" stroke-width="3"/>
+            
+            <!-- Barra 1 (pequeña) -->
+            <rect x="20" y="60" width="12" height="25" fill="currentColor"/>
+            
+            <!-- Barra 2 (mediana) -->
+            <rect x="44" y="45" width="12" height="40" fill="currentColor"/>
+            
+            <!-- Barra 3 (grande) -->
+            <rect x="68" y="30" width="12" height="55" fill="currentColor"/>
+          </svg>
+          <span class="fw-bold" style="font-size: 1.1rem;">TFG · Stock</span>
         </div>
 
         <ul class="nav nav-pills">
@@ -47,6 +60,29 @@
        href="{% url 'lista_movimientos' %}">
       Movimientos
     </a>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link {% if section == 'ordenes' %}active{% endif %}"
+       href="{% url 'lista_ordenes' %}">
+      Órdenes de compra
+    </a>
+  </li>
+
+  <li class="nav-item">
+    <a class="nav-link {% if section == 'proveedores' %}active{% endif %}"
+       href="{% url 'lista_proveedores' %}">
+      Proveedores
+    </a>
+  </li>
+
+  <li class="nav-item ms-3">
+    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+      {% csrf_token %}
+      <button type="submit" class="nav-link btn btn-outline-danger rounded-2 border-0" style="cursor: pointer;">
+        Cerrar sesión
+      </button>
+    </form>
   </li>
 </ul>
 

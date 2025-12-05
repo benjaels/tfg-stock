@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Proveedores{% endblock %}
+
+{% block content %}
+  <h1 class="h3 fw-bold mb-3">Proveedores</h1>
+
+  <section class="bg-white rounded-4 shadow-sm p-4">
+    <div class="mb-3 d-flex justify-content-end">
+      <button 
+        class="btn btn-dark rounded-3"
+        data-bs-toggle="modal"
+        data-bs-target="#modalProveedor"
+      >
+        Nuevo proveedor
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <div class="rounded-3 bg-secondary bg-opacity-10 px-4 py-3 fw-semibold d-flex mb-2" style="align-items: center;">
+        <div style="width: 30%;">Razón social</div>
+        <div style="width: 20%;">CUIT</div>
+        <div style="width: 18%;">Teléfono</div>
+        <div style="width: 18%;">Correo</div>
+        <div class="text-end" style="width: 14%;">Forma de pago</div>
+      </div>
+
+      {% for prov in proveedores %}
+        <div class="d-flex align-items-center bg-white border rounded-3 px-4 py-3 mb-2">
+          <div style="width: 30%;" class="fw-semibold">{{ prov.razon_social }}</div>
+          <div style="width: 20%;">{{ prov.cuit }}</div>
+          <div style="width: 18%;">{{ prov.telefono }}</div>
+          <div style="width: 18%;">{{ prov.correo }}</div>
+          <div class="text-end" style="width: 14%;">{{ prov.get_forma_pago_display }}</div>
+        </div>
+      {% empty %}
+        <div class="text-center text-muted py-4">
+          No hay proveedores registrados.
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Modal: Nuevo proveedor -->
+  <div class="modal fade" id="modalProveedor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Nuevo proveedor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <form method="post" action="{% url 'lista_proveedores' %}">
+          {% csrf_token %}
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="razon_social" class="form-label">Razón social</label>
+              <input type="text" id="razon_social" name="razon_social" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="cuit" class="form-label">CUIT</label>
+              <input type="text" id="cuit" name="cuit" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="telefono" class="form-label">Teléfono</label>
+              <input type="text" id="telefono" name="telefono" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="correo" class="form-label">Correo</label>
+              <input type="email" id="correo" name="correo" class="form-control rounded-3" required>
+            </div>
+            <div class="mb-3">
+              <label for="forma_pago" class="form-label">Forma de pago</label>
+              <select id="forma_pago" name="forma_pago" class="form-select rounded-3" required>
+                {% for value, label in proveedores.model.FORMA_PAGO_CHOICES %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer border-0 pt-0">
+            <button type="submit" class="btn btn-dark w-100 rounded-3 py-2">Guardar proveedor</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
